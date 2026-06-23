@@ -1,0 +1,143 @@
+<resources>
+    <string name="app_name">Confundo</string>
+    <string name="nav_home">首页</string>
+    <string name="nav_settings">设置</string>
+    <string name="menu_show_system_apps">系统应用</string>
+    <string name="fab_apply_all">一键应用</string>
+    <string name="fab_template_manage">模版管理</string>
+    <string name="toolbar_select_all">全选</string>
+    <string name="toolbar_deselect_all">取消全选</string>
+    <string name="toolbar_apply_template">应用模版</string>
+    <string name="toolbar_enable_all">全部开启</string>
+    <string name="toolbar_disable_all">全部关闭</string>
+    <string name="toolbar_reset_on">重置开</string>
+    <string name="toolbar_reset_off">重置关</string>
+    <string name="toolbar_delete_selected">删除选中</string>
+    <string name="switch_enable">启用</string>
+    <string name="switch_auto_reset">受自动重置影响</string>
+    <string name="menu_random_fill">随机填充</string>
+    <string name="detail_item_device_id">DeviceID</string>
+    <string name="detail_item_android_id">AndroidID</string>
+    <string name="detail_item_network_country">网络国家</string>
+    <string name="detail_item_network_operator">网络运营商</string>
+    <string name="detail_item_network_operator_name">网络运营商名称</string>
+    <string name="detail_item_network_iccid">ICCID</string>
+    <string name="detail_item_sim_country">SIM卡国家</string>
+    <string name="detail_item_timezone">时区</string>
+    <string name="detail_item_android_version">Android版本</string>
+    <string name="detail_item_locale">地区设置</string>
+    <string name="detail_item_model">手机型号</string>
+    <string name="detail_item_device">设备代号</string>
+    <string name="detail_item_brand">品牌</string>
+    <string name="detail_item_manufacturer">制造商</string>
+    <string name="detail_item_product">产品名称</string>
+    <string name="detail_item_hardware">硬件</string>
+    <string name="detail_item_fingerprint">构建指纹</string>
+    <string name="detail_item_release">版本号</string>
+    <string name="detail_item_incremental">增量版本</string>
+    <string name="detail_item_sdk_int">SDK级别</string>
+    <string name="detail_item_serial">序列号</string>
+    <string name="detail_item_os_version">系统版本</string>
+    <string name="detail_item_ram">物理内存</string>
+    <string name="detail_item_cpu_cores">处理器核心数</string>
+    <string name="detail_item_kernel">Kernel版本</string>
+    <string name="detail_item_storage">存储空间</string>
+    <string name="detail_item_storage_used_percent">存储已占用百分比 (%)</string>
+    <string name="detail_item_boot_time">开机时间</string>
+    <string name="detail_item_battery">电池设计容量</string>
+    <string name="detail_item_battery_summary">设置设备的物理电池总容量 (例如: 4500 mAh)</string>
+
+    <string name="detail_item_battery_status">电池运行状态</string>
+    <string name="detail_item_battery_status_summary">可选设置：charging (充电中), discharging (放电中), full (已充满), not_charging (未充电)</string>
+
+    <string name="detail_item_battery_plugged">电源连接类型</string>
+    <string name="detail_item_battery_plugged_summary">可选设置：ac (交流电), usb (USB接口), wireless (无线充电)</string>
+
+    <string name="detail_item_battery_voltage">电池实时电压 (mV)</string>
+    <string name="detail_item_battery_voltage_summary">标准电压通常在 3700 至 4400 毫伏之间</string>
+
+    <string name="detail_item_battery_temp">电池当前温度</string>
+    <string name="detail_item_battery_temp_summary">请输入实际温度的10倍。例如输入 265 代表 26.5°C</string>
+
+    <string name="detail_item_battery_health">电池健康状态</string>
+    <string name="detail_item_battery_health_summary">可选设置：good (良好), overheat (过热), dead (损坏), over_voltage (过压), cold (过冷)</string>
+
+    <string name="detail_item_battery_level">当前电量百分比</string>
+    <string name="detail_item_battery_level_summary">请输入 0 至 100 之间的整数数值</string>
+
+    <string name="detail_item_battery_current">实时充放电流 (mA)</string>
+    <string name="detail_item_battery_current_summary">请输入正整数（单位毫安），系统 Hook 底层会自动根据状态适配正负号</string>
+
+    <string name="detail_item_battery_tech">电池工艺技术</string>
+    <string name="detail_item_battery_tech_summary">常见类型如：Li-ion (锂离子电池), Li-poly (锂聚合物电池)</string>
+    <string name="detail_item_activation_time">首次开机激活时间</string>
+    <string name="detail_item_is_24h">24小时制</string>
+    <string name="detail_item_max_refresh_rate">最大刷新率</string>
+    <string name="detail_item_min_width">最小宽度</string>
+    <string name="detail_item_accessibility_service_count">已安装无障碍服务总数</string>
+    <string name="detail_item_accessibility_enabled">无障碍总开关</string>
+    <string name="detail_item_talkback_enabled">Talkback开关</string>
+    <string name="detail_item_high_contrast_text">高对比度文字开关</string>
+    <string name="detail_item_color_inversion">色彩反转开关</string>
+    <string name="detail_item_daltonizer_enabled">色盲校正开关</string>
+    <string name="detail_item_caption_enabled">字幕开关</string>
+    <string name="detail_item_mono_audio">单声道音频开关</string>
+    <string name="detail_item_power_ends_call">电源键挂断开关</string>
+    <string name="detail_item_gms_version">GMS版本</string>
+    <string name="detail_item_play_store_version">GooglePlayStore版本</string>
+    <string name="detail_item_opengl_version">OpenGL版本</string>
+    <string name="detail_item_drm_id">DRM ID</string>
+    <string name="detail_item_phone_number">手机号</string>
+    <string name="detail_item_wifi_bssid">Wifi BSSID</string>
+    <string name="detail_item_imei">IMEI</string>
+    <string name="detail_item_meid">MEID</string>
+    <string name="detail_item_imsi">IMSI</string>
+    <string name="detail_item_google_ad_id">Google Advertising ID</string>
+    <string name="dialog_confirm">确定</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="template_manage">模版管理</string>
+    <string name="template_new">新模版</string>
+    <string name="template_apply_dialog_title">选择要应用的模版</string>
+    <string name="template_no_templates">暂无模版</string>
+    <string name="home_loading">正在加载应用列表…</string>
+    <string name="app_detail_loading">正在加载应用数据…</string>
+    <string name="random_fill_done">随机填充完成</string>
+    <string name="apply_all_done">一键应用完成</string>
+    <string name="dialog_apply_all_title">确认一键应用</string>
+    <string name="dialog_apply_all_message">将给所有应用程序逐个随机生成信息并应用。每个程序读取到的信息互不相同。</string>
+
+    <!-- New fingerprint fields -->
+    <string name="detail_item_gl_renderer">GL 渲染器</string>
+    <string name="detail_item_gl_vendor">GL 厂商</string>
+    <string name="detail_item_sensor_vendor">传感器厂商</string>
+    <string name="detail_item_drm_security_level">DRM 安全级别 (L1/L3)</string>
+    <string name="detail_item_wifi_ssid">Wifi SSID</string>
+    <string name="detail_item_wifi_mac">Wifi MAC 地址</string>
+
+    <!-- Detail page section headers -->
+    <string name="section_identity">身份标识</string>
+    <string name="section_telephony">运营商与网络</string>
+    <string name="section_system">系统版本</string>
+    <string name="section_hardware">硬件规格</string>
+    <string name="section_battery">电池</string>
+    <string name="section_time">时间</string>
+    <string name="section_google">Google 服务</string>
+    <string name="section_accessibility">无障碍</string>
+    <string name="section_drm">DRM</string>
+    <string name="section_render">渲染与传感器</string>
+
+    <!-- Input dialog / units -->
+    <string name="input_invalid_number">请输入有效的数值</string>
+    <string name="input_select_unit">单位</string>
+    <string name="input_select_option">请选择</string>
+
+    <!-- Settings -->
+    <string name="settings_auto_refresh_title">定时自动重置</string>
+    <string name="settings_auto_refresh_summary">开启后将按设定周期，自动为所有"受自动重置影响"的应用重新随机化其已填充字段。空字段不会被修改。</string>
+    <string name="settings_interval_title">重置周期</string>
+    <string name="settings_interval_days">每 %1$d 天</string>
+    <string name="settings_run_now">立即执行一次</string>
+    <string name="settings_run_now_done">已触发重置任务</string>
+    <string name="settings_last_run">上次重置：%1$s</string>
+    <string name="settings_last_run_never">尚未执行</string>
+</resources>
