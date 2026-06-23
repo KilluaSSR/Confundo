@@ -33,6 +33,10 @@ import killua.dev.confundo.R
 import killua.dev.confundo.data.AppSettings
 import killua.dev.confundo.ui.components.CardSwitch
 import killua.dev.confundo.ui.theme.ConfundoTheme
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -125,7 +129,9 @@ private fun Refresh(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit =
                     enabled = state.autoRefreshEnabled,
                 )
                 Text(
-                    text = stringResource(R.string.settings_last_run),
+                    text = stringResource(
+                        R.string.settings_last_run,
+                        SimpleDateFormat("yyyy-MM-dd HH:mm", LocalLocale.current.platformLocale).format(Date(state.lastRunMillis))),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
