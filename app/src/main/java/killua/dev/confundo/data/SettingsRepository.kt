@@ -48,17 +48,27 @@ class SettingsRepository @Inject constructor(
     }
 
     suspend fun setAutoRefreshEnabled(enabled: Boolean) {
-        context.settingsDataStore.edit { it[Keys.AUTO_REFRESH] = enabled }
+        context.settingsDataStore.edit {
+            if (it[Keys.AUTO_REFRESH] != enabled) {
+                it[Keys.AUTO_REFRESH] = enabled
+            }
+        }
     }
 
     suspend fun setIntervalDays(days: Int) {
+        val normalized = days.coerceIn(AppSettings.MIN_INTERVAL_DAYS, AppSettings.MAX_INTERVAL_DAYS)
         context.settingsDataStore.edit {
-            it[Keys.INTERVAL_DAYS] =
-                days.coerceIn(AppSettings.MIN_INTERVAL_DAYS, AppSettings.MAX_INTERVAL_DAYS)
+            if (it[Keys.INTERVAL_DAYS] != normalized) {
+                it[Keys.INTERVAL_DAYS] = normalized
+            }
         }
     }
 
     suspend fun setLastRun(millis: Long) {
-        context.settingsDataStore.edit { it[Keys.LAST_RUN] = millis }
+        context.settingsDataStore.edit {
+            if (it[Keys.LAST_RUN] != millis) {
+                it[Keys.LAST_RUN] = millis
+            }
+        }
     }
 }

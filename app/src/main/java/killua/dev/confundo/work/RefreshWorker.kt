@@ -12,6 +12,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import killua.dev.confundo.data.ConfigRepository
 import killua.dev.confundo.data.SettingsRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
@@ -33,7 +34,7 @@ class RefreshWorker @AssistedInject constructor(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        runCatching {
+        try {
             val pm = applicationContext.packageManager
             val packages = pm.getInstalledApplications(PackageManager.GET_META_DATA)
                 .map { it.packageName }
@@ -47,10 +48,12 @@ class RefreshWorker @AssistedInject constructor(
             }
 
             settingsRepository.setLastRun(System.currentTimeMillis())
-        }.fold(
-            onSuccess = { Result.success() },
-            onFailure = { Result.retry() },
-        )
+            Result.success()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            Result.retry()
+        }
     }
 
     companion object {

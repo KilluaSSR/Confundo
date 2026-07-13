@@ -5,6 +5,7 @@ import com.highcapable.yukihookapi.hook.factory.prefs
 import dagger.hilt.android.qualifiers.ApplicationContext
 import killua.dev.confundo.ui.pages.home.FieldKeys
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flow
@@ -34,7 +35,11 @@ class ConfigRepository @Inject constructor(
     }
 
     /** 失效总线。 */
-    private val invalidations = MutableSharedFlow<String>(extraBufferCapacity = 64)
+    private val invalidations = MutableSharedFlow<String>(
+        replay = 0,
+        extraBufferCapacity = 128,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
 
     private val writeMutex = Mutex()
 
@@ -140,7 +145,7 @@ class ConfigRepository @Inject constructor(
         val fresh = RandomEngine.generate()
         context.prefs(pkg).edit {
             current.fields.forEach { (key, oldValue) ->
-                if (oldValue.isNotEmpty()) {
+                if (oldValue.isNotBlank()) {
                     fresh[key]?.let { putString(key, it) }
                 }
             }
@@ -149,9 +154,19 @@ class ConfigRepository @Inject constructor(
 
     private suspend fun write(pkg: String, block: () -> Unit) {
         withContext(Dispatchers.IO) {
-            writeMutex.withLock { runCatching(block) }
+            writeMutex.withLock { block() }
         }
         notifyChanged(pkg)
+    }
+
+    private suspend fun writeTemplates(
+        changedPrefs: List<String>,
+        block: () -> Unit,
+    ) {
+        withContext(Dispatchers.IO) {
+            writeMutex.withLock { block() }
+        }
+        changedPrefs.forEach { notifyChanged(it) }
     }
 
     // 模板
@@ -167,10 +182,12 @@ class ConfigRepository @Inject constructor(
         val json = runCatching {
             context.prefs(TEMPLATES_PREFS).getString(IDS_KEY, "[]")
         }.getOrDefault("[]")
-        return runCatching {
+        return try {
             val arr = JSONArray(json)
             (0 until arr.length()).map { arr.getString(it) }
-        }.getOrDefault(emptyList())
+        } catch (e: Exception) {
+            throw IllegalStateException("Template ids corrupted", e)
+        }
     }
 
     private fun writeTemplateIds(ids: List<String>) {
@@ -211,49 +228,32 @@ class ConfigRepository @Inject constructor(
 
     suspend fun createTemplate(name: String): String = withContext(Dispatchers.IO) {
         val id = UUID.randomUUID().toString()
-        writeMutex.withLock {
-            runCatching {
-                context.prefs(templatePrefs(id)).edit { putString(TEMPLATE_NAME_KEY, name) }
-                writeTemplateIds(readTemplateIds() + id)
-            }
+        writeTemplates(listOf(TEMPLATES_PREFS)) {
+            context.prefs(templatePrefs(id)).edit { putString(TEMPLATE_NAME_KEY, name) }
+            writeTemplateIds(readTemplateIds() + id)
         }
-        notifyChanged(TEMPLATES_PREFS)
         id
     }
 
     suspend fun setTemplateName(id: String, name: String) {
-        withContext(Dispatchers.IO) {
-            writeMutex.withLock {
-                runCatching {
-                    context.prefs(templatePrefs(id)).edit { putString(TEMPLATE_NAME_KEY, name) }
-                }
-            }
+        writeTemplates(listOf(TEMPLATES_PREFS, templatePrefs(id))) {
+            context.prefs(templatePrefs(id)).edit { putString(TEMPLATE_NAME_KEY, name) }
         }
-        notifyChanged(TEMPLATES_PREFS)
-        notifyChanged(templatePrefs(id))
     }
 
     suspend fun updateTemplateField(id: String, key: String, value: String) {
-        withContext(Dispatchers.IO) {
-            writeMutex.withLock {
-                runCatching { context.prefs(templatePrefs(id)).edit { putString(key, value) } }
-            }
+        writeTemplates(listOf(templatePrefs(id))) {
+            context.prefs(templatePrefs(id)).edit { putString(key, value) }
         }
-        notifyChanged(templatePrefs(id))
     }
 
     suspend fun randomFillTemplate(id: String) {
-        withContext(Dispatchers.IO) {
-            writeMutex.withLock {
-                runCatching {
-                    val values = RandomEngine.generate()
-                    context.prefs(templatePrefs(id)).edit {
-                        values.forEach { (k, v) -> putString(k, v) }
-                    }
-                }
+        writeTemplates(listOf(templatePrefs(id))) {
+            val values = RandomEngine.generate()
+            context.prefs(templatePrefs(id)).edit {
+                values.forEach { (k, v) -> putString(k, v) }
             }
         }
-        notifyChanged(templatePrefs(id))
     }
 
     fun templateDetailFlow(id: String): Flow<TemplateDetail> {
@@ -272,15 +272,10 @@ class ConfigRepository @Inject constructor(
     }
 
     suspend fun deleteTemplates(ids: List<String>) {
-        withContext(Dispatchers.IO) {
-            writeMutex.withLock {
-                runCatching {
-                    val remaining = readTemplateIds().filter { it !in ids }
-                    writeTemplateIds(remaining)
-                    ids.forEach { context.prefs(templatePrefs(it)).edit { clear() } }
-                }
-            }
+        writeTemplates(listOf(TEMPLATES_PREFS)) {
+            val remaining = readTemplateIds().filter { it !in ids }
+            writeTemplateIds(remaining)
+            ids.forEach { context.prefs(templatePrefs(it)).edit { clear() } }
         }
-        notifyChanged(TEMPLATES_PREFS)
     }
 }

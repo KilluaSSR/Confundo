@@ -9,9 +9,9 @@ import killua.dev.confundo.ui.pages.home.FieldKeys
 object NetworkHooks : HookDelegate {
 
     override fun PackageParam.apply(fields: Map<String, String>) {
-        val bssid = fields.spoof(FieldKeys.WIFI_BSSID)
+        val bssid = normalizeMac(fields.spoof(FieldKeys.WIFI_BSSID))
         val ssid = fields.spoof(FieldKeys.WIFI_SSID)
-        val mac = fields.spoof(FieldKeys.WIFI_MAC)
+        val mac = normalizeMac(fields.spoof(FieldKeys.WIFI_MAC))
         if (bssid == null && ssid == null && mac == null) return
 
         "android.net.wifi.WifiInfo".toClassOrNull()?.hook {
@@ -42,4 +42,15 @@ object NetworkHooks : HookDelegate {
             }
         }
     }
+
+    private fun normalizeMac(value: String?): String? {
+        val normalized = value
+            ?.replace('-', ':')
+            ?.lowercase()
+            ?.takeIf { MAC_REGEX.matches(it) }
+            ?: return null
+        return normalized
+    }
+
+    private val MAC_REGEX = Regex("^[0-9a-f]{2}(:[0-9a-f]{2}){5}$")
 }

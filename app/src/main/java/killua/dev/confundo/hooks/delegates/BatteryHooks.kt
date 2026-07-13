@@ -10,7 +10,6 @@ import killua.dev.confundo.hooks.HookDelegate
 import killua.dev.confundo.hooks.spoof
 import killua.dev.confundo.ui.pages.home.FieldKeys
 import kotlin.math.abs
-import kotlin.math.min
 
 /**
  * 电池 Hook。
@@ -40,7 +39,7 @@ object BatteryHooks : HookDelegate {
             val magnitude = abs(it).toLong() * 1000L
             if (status == BatteryStatus.CHARGING || status == BatteryStatus.FULL) -magnitude else magnitude
         }
-        val chargeCounterUah: Long? = capacityMah?.let { it.toLong() * 1000L }
+        val chargeCounterUah: Long? = capacityMah?.toLong()?.times(1000L)
 
         // PowerProfile.getAveragePower("battery.capacity") -> 设计容量(mAh)
         capacityMah?.let { cap ->
@@ -66,9 +65,15 @@ object BatteryHooks : HookDelegate {
                     afterHook {
                         when (args().first().int()) {
                             BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER ->
-                                chargeCounterUah?.let { result = min(Int.MAX_VALUE.toLong(), it).toInt() }
+                                chargeCounterUah?.let {
+                                    result = it.coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt()
+                                }
+
                             BatteryManager.BATTERY_PROPERTY_CURRENT_NOW ->
-                                currentNowUa?.let { result = it.toInt() }
+                                currentNowUa?.let {
+                                    result = it.coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt()
+                                }
+
                             BatteryManager.BATTERY_PROPERTY_CAPACITY ->
                                 level?.let { result = it }
                         }
@@ -84,6 +89,7 @@ object BatteryHooks : HookDelegate {
                         when (args().first().int()) {
                             BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER ->
                                 chargeCounterUah?.let { result = it }
+
                             BatteryManager.BATTERY_PROPERTY_CURRENT_NOW ->
                                 currentNowUa?.let { result = it }
                         }

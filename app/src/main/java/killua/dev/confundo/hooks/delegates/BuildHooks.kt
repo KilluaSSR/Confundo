@@ -28,8 +28,10 @@ object BuildHooks : HookDelegate {
 
         versionClass?.let { vClass ->
             spoofStaticField(vClass, "INCREMENTAL", fields.spoof(FieldKeys.INCREMENTAL))
+            val realSdk = android.os.Build.VERSION.SDK_INT
             fields.spoof(FieldKeys.SDK_INT)?.toIntOrNull()?.let { sdk ->
-                runCatching { vClass.field { name = "SDK_INT" }.ignored().get().set(sdk) }
+                val effectiveSdk = sdk.coerceAtLeast(realSdk)
+                runCatching { vClass.field { name = "SDK_INT" }.ignored().get().set(effectiveSdk) }
             }
             fields.spoof(FieldKeys.ANDROID_VERSION)?.let { release ->
                 runCatching { vClass.field { name = "RELEASE" }.ignored().get().set(release) }

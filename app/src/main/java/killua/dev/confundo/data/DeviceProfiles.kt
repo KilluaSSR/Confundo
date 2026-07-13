@@ -47,7 +47,7 @@ object DeviceProfiles {
             brand = "google", manufacturer = "Google",
             model = "Pixel 8", device = "shiba", product = "shiba", hardware = "zuma",
             ramOptionsGb = listOf(8), romOptionsGb = listOf(128, 256),
-            cpuCores = 9, androidVersion = "14", sdkInt = 34,
+            cpuCores = 8, androidVersion = "14", sdkInt = 34,
             kernelOptions = listOf("5.15.137", "5.15.148"),
             refreshRates = listOf(120), glRenderer = "Mali-G715-Immortalis MC10",
             glVendor = "ARM", openglVersion = "OpenGL ES 3.2", sensorVendor = "Google",
@@ -144,5 +144,8 @@ object DeviceProfiles {
         ),
     )
 
-    fun random(): DeviceProfile = all.random()
+    fun random(): DeviceProfile {
+        require(all.isNotEmpty()) { "DeviceProfiles is empty" }
+        return all.random()
+    }
 }

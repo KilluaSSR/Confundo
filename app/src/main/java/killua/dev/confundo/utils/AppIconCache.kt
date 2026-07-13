@@ -19,23 +19,26 @@ import javax.inject.Singleton
 
 @Singleton
 class AppIconCache @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
 ) {
     companion object {
-        private const val MAX_CACHE_SIZE = 64
+        private val MAX_CACHE_SIZE_KB = ((Runtime.getRuntime().maxMemory() / 1024) / 64).toInt().coerceIn(2 * 1024, 8 * 1024)
     }
 
-    private val cache = LruCache<String, ImageBitmap>(MAX_CACHE_SIZE)
+    private val cache = object : LruCache<String, Bitmap>(MAX_CACHE_SIZE_KB) {
+        override fun sizeOf(key: String, value: Bitmap): Int {
+            return value.byteCount / 1024
+        }
+    }
 
     suspend fun getIcon(packageName: String): ImageBitmap? {
-        cache.get(packageName)?.let { return it }
+        cache.get(packageName)?.let { return it.asImageBitmap() }
         return withContext(Dispatchers.IO) {
             try {
                 val drawable = context.packageManager.getApplicationIcon(packageName)
                 val bitmap = drawable.toBitmap(48)
-                val imageBitmap = bitmap.asImageBitmap()
-                cache.put(packageName, imageBitmap)
-                imageBitmap
+                cache.put(packageName, bitmap)
+                bitmap.asImageBitmap()
             } catch (_: Exception) {
                 null
             }

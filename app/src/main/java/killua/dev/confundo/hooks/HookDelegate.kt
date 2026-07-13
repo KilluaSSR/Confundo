@@ -13,4 +13,4 @@ interface HookDelegate {
  * 任何被用户清空（或默认 ""）的字段都不会触发 Hook，从而暴露真实值。
  */
 fun Map<String, String>.spoof(key: String): String? =
-    this[key]?.takeIf { it.isNotEmpty() }
+    this[key]?.takeIf { it.isNotBlank() }

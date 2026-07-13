@@ -3,7 +3,7 @@ package killua.dev.confundo.hooks.delegates
 import com.highcapable.yukihookapi.hook.param.PackageParam
 import killua.dev.confundo.data.SystemPropKey
 import killua.dev.confundo.hooks.HookDelegate
-
+import killua.dev.confundo.ui.pages.home.FieldKeys
 
 object SystemPropertiesHooks : HookDelegate {
 
@@ -56,6 +56,14 @@ object SystemPropertiesHooks : HookDelegate {
     private fun resolveProp(key: String?, fields: Map<String, String>): String? {
         if (key == null) return null
         val fieldKey = SystemPropKey.fieldKeyFor(key) ?: return null
-        return fields[fieldKey]?.takeIf { it.isNotEmpty() }
+        val raw = fields[fieldKey]?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+
+        if (fieldKey == FieldKeys.SDK_INT) {
+            val realSdk = android.os.Build.VERSION.SDK_INT
+            val effectiveSdk = raw.toIntOrNull()?.coerceAtLeast(realSdk) ?: return null
+            return effectiveSdk.toString()
+        }
+
+        return raw
     }
 }

@@ -22,8 +22,12 @@ class App : Application(), Configuration.Provider {
         instance = this
     }
 
-    override val workManagerConfiguration: Configuration
-        get() = Configuration.Builder()
+    private val workConfig: Configuration by lazy {
+        Configuration.Builder()
             .setWorkerFactory(workerFactory)
             .build()
+    }
+
+    override val workManagerConfiguration: Configuration
+        get() = workConfig
 }

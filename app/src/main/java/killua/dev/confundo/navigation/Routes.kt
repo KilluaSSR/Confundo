@@ -1,5 +1,7 @@
 package killua.dev.confundo.navigation
 
+import android.net.Uri
+
 object Routes {
     const val MAIN_GRAPH = "main_graph"
     const val HOME = "home"
@@ -8,6 +10,6 @@ object Routes {
     const val TEMPLATE_MANAGE = "template_manage"
     const val TEMPLATE_DETAIL = "template_detail/{templateId}"
 
-    fun appDetail(pkg: String) = "app_detail/$pkg"
-    fun templateDetail(templateId: String) = "template_detail/$templateId"
+    fun appDetail(pkg: String) = "app_detail/${Uri.encode(pkg)}"
+    fun templateDetail(templateId: String) = "template_detail/${Uri.encode(templateId)}"
 }

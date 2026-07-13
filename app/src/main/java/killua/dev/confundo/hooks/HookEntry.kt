@@ -35,15 +35,31 @@ object HookEntry : IYukiHookXposedInit {
             val fields = FieldKeys.fieldEntries.associate { (key, _) ->
                 key to runCatching { prefs(pkg).getString(key, "") }.getOrDefault("")
             }
+            val normalizedFields = normalizeSdkFloor(fields)
 
             // 全空则整体放行真实值。
-            if (fields.values.all { it.isEmpty() }) return@loadApp
+            if (normalizedFields.values.all { it.isEmpty() }) return@loadApp
 
             delegates.forEach { delegate ->
                 runCatching {
-                    with(delegate) { apply(fields) }
+                    with(delegate) { apply(normalizedFields) }
                 }.onFailure { YLog.error("Delegate ${delegate.javaClass.simpleName} failed", it) }
             }
+        }
+    }
+
+    private fun normalizeSdkFloor(fields: Map<String, String>): Map<String, String> {
+        val requestedRaw = fields[FieldKeys.SDK_INT]?.trim().orEmpty()
+        if (requestedRaw.isEmpty()) return fields
+
+        val effectiveSdk = requestedRaw
+            .toIntOrNull()
+            ?.coerceAtLeast(android.os.Build.VERSION.SDK_INT)
+        val normalizedSdk = effectiveSdk?.toString().orEmpty()
+        if (normalizedSdk == requestedRaw) return fields
+
+        return fields.toMutableMap().apply {
+            put(FieldKeys.SDK_INT, normalizedSdk)
         }
     }
 

@@ -36,6 +36,7 @@ object GoogleHooks : HookDelegate {
 
     private fun PackageParam.packageVersionHook(gmsVersion: String?, playVersion: String?) {
         val pm = "android.app.ApplicationPackageManager".toClassOrNull() ?: return
+        val hasFlagsClass = FLAGS_CLASS.toClassOrNull() != null
 
         fun applyVersion(pi: PackageInfo, version: String) {
             val code = version.replace(Regex("[^0-9]"), "").take(9).toLongOrNull() ?: 0L
@@ -61,12 +62,15 @@ object GoogleHooks : HookDelegate {
                     afterHook { YukiAfter(args[0] as? String, result) }
                 }
             } catch (_: NoSuchMethodError) {}
-            try {
-                injectMember {
-                    method { name = "getPackageInfo"; param(String::class.java, FLAGS_CLASS) }
-                    afterHook { YukiAfter(args[0] as? String, result) }
-                }
-            } catch (_: NoSuchMethodError) {}
+
+            if (hasFlagsClass) {
+                try {
+                    injectMember {
+                        method { name = "getPackageInfo"; param(String::class.java, FLAGS_CLASS) }
+                        afterHook { YukiAfter(args[0] as? String, result) }
+                    }
+                } catch (_: NoSuchMethodError) {}
+            }
         }
     }
 }

@@ -9,13 +9,14 @@ import java.io.File
 
 object HardwareHooks : HookDelegate {
     private const val BLOCK_SIZE = 4096L
+
     override fun PackageParam.apply(fields: Map<String, String>) {
         CPUHooks(fields)
         MemoryHooks(fields)
         StorageHooks(fields)
     }
 
-    private fun PackageParam.CPUHooks(fields: Map<String, String>){
+    private fun PackageParam.CPUHooks(fields: Map<String, String>) {
         val cpuCores = fields.spoof(FieldKeys.CPU_CORES)?.toIntOrNull()
         if (cpuCores != null) {
             Runtime.getRuntime().javaClass.hook {
@@ -29,7 +30,7 @@ object HardwareHooks : HookDelegate {
         }
     }
 
-    private fun PackageParam.MemoryHooks(fields: Map<String, String>){
+    private fun PackageParam.MemoryHooks(fields: Map<String, String>) {
         val ram = fields.spoof(FieldKeys.RAM) ?: return
         val ramGb = ram.replace(Regex("[^0-9.]"), "").toDoubleOrNull() ?: return
         val totalMem = (ramGb * 1024 * 1024 * 1024).toLong()
@@ -49,17 +50,17 @@ object HardwareHooks : HookDelegate {
         }
     }
 
-    private fun PackageParam.StorageHooks(fields: Map<String, String>){
+    private fun PackageParam.StorageHooks(fields: Map<String, String>) {
         val storage = fields.spoof(FieldKeys.STORAGE) ?: return
         val sizeGb = storage.replace(Regex("[^0-9.]"), "").toDoubleOrNull() ?: return
         val usedPercentStr = fields.spoof(FieldKeys.STORAGE_USED_PERCENT)
         val usedPercent = usedPercentStr?.replace(Regex("[^0-9.]"), "")?.toDoubleOrNull()?.coerceIn(0.0, 100.0) ?: 0.0
         val totalBytes = (sizeGb * 1000 * 1000 * 1000).toLong()
-
         val freeBytes = (totalBytes * ((100.0 - usedPercent) / 100.0)).toLong()
 
         val blockCount = totalBytes / BLOCK_SIZE
         val freeBlocks = freeBytes / BLOCK_SIZE
+
         StatFs::class.java.hook {
             try {
                 injectMember {
@@ -85,7 +86,6 @@ object HardwareHooks : HookDelegate {
                     afterHook { result = blockCount }
                 }
             } catch (_: NoSuchMethodError) {}
-
             try {
                 injectMember {
                     method { name = "getBlockSizeLong" }
@@ -111,36 +111,34 @@ object HardwareHooks : HookDelegate {
                 injectMember {
                     method { name = "getTotalSpace" }
                     afterHook {
-                        if (instance<File>().path.contains("emulated") || instance<File>().path.startsWith("/data") || instance<File>().path.startsWith("/storage")) {
+                        val path = instance<File>().path
+                        if (shouldSpoofStoragePath(path)) {
                             result = totalBytes
                         }
                     }
                 }
-
             } catch (_: NoSuchMethodError) {}
             try {
                 injectMember {
                     method { name = "getFreeSpace" }
                     afterHook {
                         val path = instance<File>().path
-                        if (path.contains("emulated") || path.startsWith("/data") || path.startsWith("/storage")) {
+                        if (shouldSpoofStoragePath(path)) {
                             result = freeBytes
                         }
                     }
                 }
-
             } catch (_: NoSuchMethodError) {}
             try {
                 injectMember {
                     method { name = "getUsableSpace" }
                     afterHook {
                         val path = instance<File>().path
-                        if (path.contains("emulated") || path.startsWith("/data") || path.startsWith("/storage")) {
+                        if (shouldSpoofStoragePath(path)) {
                             result = freeBytes
                         }
                     }
                 }
-
             } catch (_: NoSuchMethodError) {}
         }
 
@@ -156,5 +154,11 @@ object HardwareHooks : HookDelegate {
                 }
             } catch (_: NoSuchMethodError) {}
         }
+    }
+
+    private fun shouldSpoofStoragePath(path: String): Boolean {
+        return path.startsWith("/storage/emulated/") ||
+                path.startsWith("/storage/") ||
+                path.startsWith("/data/")
     }
 }

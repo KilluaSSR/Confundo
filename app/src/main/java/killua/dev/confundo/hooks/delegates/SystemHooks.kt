@@ -32,11 +32,39 @@ object SystemHooks : HookDelegate {
 
     private fun PackageParam.hookBootTime(fields: Map<String, String>) {
         val bootTime = fields.spoof(FieldKeys.BOOT_TIME)?.toLongOrNull() ?: return
+        val realBaseMs = android.os.SystemClock.elapsedRealtime()
+        val fakeBaseMs = (System.currentTimeMillis() - bootTime).coerceAtLeast(0L)
+        val offsetMs = fakeBaseMs - realBaseMs
+        val offsetNs = offsetMs * 1_000_000L
+
         "android.os.SystemClock".toClassOrNull()?.hook {
             try {
                 injectMember {
                     method { name = "elapsedRealtime" }
-                    afterHook { result = System.currentTimeMillis() - bootTime }
+                    afterHook {
+                        val real = (result as? Long) ?: return@afterHook
+                        result = (real + offsetMs).coerceAtLeast(0L)
+                    }
+                }
+            } catch (_: NoSuchMethodError) {}
+
+            try {
+                injectMember {
+                    method { name = "elapsedRealtimeNanos" }
+                    afterHook {
+                        val real = (result as? Long) ?: return@afterHook
+                        result = (real + offsetNs).coerceAtLeast(0L)
+                    }
+                }
+            } catch (_: NoSuchMethodError) {}
+
+            try {
+                injectMember {
+                    method { name = "uptimeMillis" }
+                    afterHook {
+                        val real = (result as? Long) ?: return@afterHook
+                        result = (real + offsetMs).coerceAtLeast(0L)
+                    }
                 }
             } catch (_: NoSuchMethodError) {}
         }

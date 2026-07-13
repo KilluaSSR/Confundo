@@ -14,9 +14,16 @@ object DisplayHooks : HookDelegate {
         val refreshRate = fields.spoof(FieldKeys.MAX_REFRESH_RATE)
             ?.replace(Regex("[^0-9.]"), "")?.toFloatOrNull() ?: return
 
-        val displayClass = "android.view.Display".toClassOrNull() ?: return
+        "android.view.Display".toClassOrNull()?.hook {
+            try {
+                injectMember {
+                    method { name = "getRefreshRate" }
+                    afterHook { result = refreshRate }
+                }
+            } catch (_: NoSuchMethodError) {}
+        }
 
-        displayClass.hook {
+        "android.view.Display\$Mode".toClassOrNull()?.hook {
             try {
                 injectMember {
                     method { name = "getRefreshRate" }
@@ -26,30 +33,10 @@ object DisplayHooks : HookDelegate {
 
             try {
                 injectMember {
-                    method { name = "getMode" }
-                    afterHook { result?.let { patchModeRefreshRate(it, refreshRate) } }
+                    method { name = "getAlternativeRefreshRates" }
+                    afterHook { result = floatArrayOf(refreshRate) }
                 }
             } catch (_: NoSuchMethodError) {}
-
-            try {
-                injectMember {
-                    method { name = "getSupportedModes" }
-                    afterHook {
-                        (result as? Array<*>)?.forEach { mode ->
-                            mode?.let { patchModeRefreshRate(it, refreshRate) }
-                        }
-                    }
-                }
-            } catch (_: NoSuchMethodError) {}
-        }
-    }
-
-    private fun patchModeRefreshRate(mode: Any, refreshRate: Float) {
-        runCatching {
-            mode.javaClass.getDeclaredField("mRefreshRate").apply {
-                isAccessible = true
-                setFloat(mode, refreshRate)
-            }
         }
     }
 }

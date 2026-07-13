@@ -98,8 +98,11 @@ enum class SettingsKey(
     HIGH_CONTRAST(SettingsNamespace.SECURE, "high_text_contrast_enabled", killua.dev.confundo.ui.pages.home.FieldKeys.HIGH_CONTRAST_TEXT),
     COLOR_INVERSION(SettingsNamespace.SECURE, "accessibility_display_inversion_enabled", killua.dev.confundo.ui.pages.home.FieldKeys.COLOR_INVERSION),
     DALTONIZER(SettingsNamespace.SECURE, "accessibility_display_daltonizer_enabled", killua.dev.confundo.ui.pages.home.FieldKeys.DALTONIZER_ENABLED),
-    ACCESSIBILITY_ENABLED(SettingsNamespace.SYSTEM, "accessibility_enabled", killua.dev.confundo.ui.pages.home.FieldKeys.ACCESSIBILITY_ENABLED),
-    CAPTIONS(SettingsNamespace.GLOBAL, "captions_enabled", killua.dev.confundo.ui.pages.home.FieldKeys.CAPTION_ENABLED);
+    ACCESSIBILITY_ENABLED(SettingsNamespace.SECURE, "accessibility_enabled", killua.dev.confundo.ui.pages.home.FieldKeys.ACCESSIBILITY_ENABLED),
+    CAPTIONS(SettingsNamespace.GLOBAL, "captions_enabled", killua.dev.confundo.ui.pages.home.FieldKeys.CAPTION_ENABLED),
+    ACCESSIBILITY_SERVICES(SettingsNamespace.SECURE, "enabled_accessibility_services", killua.dev.confundo.ui.pages.home.FieldKeys.ACCESSIBILITY_SERVICE_COUNT),
+    MONO_AUDIO(SettingsNamespace.SYSTEM, "master_mono", killua.dev.confundo.ui.pages.home.FieldKeys.MONO_AUDIO),
+    POWER_ENDS_CALL(SettingsNamespace.SECURE, "incall_power_button_behavior", killua.dev.confundo.ui.pages.home.FieldKeys.POWER_ENDS_CALL);
 
     companion object {
         fun forNamespace(ns: SettingsNamespace): Map<String, String> =
