@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Confundo" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- DayNight 主题壳：跟随系统深浅色，消除冷启动白闪与系统弹窗颜色不一致。
+         Compose 侧 ConfundoTheme 负责真正的 Material3 配色；此处显式关闭 ActionBar 以适配 Compose 全屏。 -->
+    <style name="Theme.Confundo" parent="@android:style/Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">?android:attr/colorBackground</item>
+    </style>
 </resources>

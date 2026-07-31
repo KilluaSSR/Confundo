@@ -1,11 +1,86 @@
 package killua.dev.confundo.ui.theme
 
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// 完整的品牌色板（Confundo 的“混淆咒”主题偏紫罗兰）。
+// 作为 Dynamic Color 不可用（Android 11 及以下 / 用户关闭动态取色）时的高质量 fallback，
+// 覆盖 Material3 全部颜色角色，保证深浅色下的对比度与层级一致。
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val LightColorScheme: ColorScheme = lightColorScheme(
+    primary = Color(0xFF6D4AAD),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFEADDFF),
+    onPrimaryContainer = Color(0xFF250058),
+    secondary = Color(0xFF625B71),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFE8DEF8),
+    onSecondaryContainer = Color(0xFF1E192B),
+    tertiary = Color(0xFF7D5260),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFFFD8E4),
+    onTertiaryContainer = Color(0xFF31111D),
+    error = Color(0xFFBA1A1A),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF410002),
+    background = Color(0xFFFEF7FF),
+    onBackground = Color(0xFF1D1B20),
+    surface = Color(0xFFFEF7FF),
+    onSurface = Color(0xFF1D1B20),
+    surfaceVariant = Color(0xFFE7E0EB),
+    onSurfaceVariant = Color(0xFF49454E),
+    outline = Color(0xFF7A757F),
+    outlineVariant = Color(0xFFCAC4CF),
+    scrim = Color(0xFF000000),
+    inverseSurface = Color(0xFF322F35),
+    inverseOnSurface = Color(0xFFF5EFF7),
+    inversePrimary = Color(0xFFD3BBFF),
+    surfaceDim = Color(0xFFDED8E0),
+    surfaceBright = Color(0xFFFEF7FF),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFF8F2FA),
+    surfaceContainer = Color(0xFFF2ECF4),
+    surfaceContainerHigh = Color(0xFFECE6EE),
+    surfaceContainerHighest = Color(0xFFE6E0E9),
+)
+
+val DarkColorScheme: ColorScheme = darkColorScheme(
+    primary = Color(0xFFD3BBFF),
+    onPrimary = Color(0xFF3B1E75),
+    primaryContainer = Color(0xFF53378D),
+    onPrimaryContainer = Color(0xFFEADDFF),
+    secondary = Color(0xFFCBC2DB),
+    onSecondary = Color(0xFF332D41),
+    secondaryContainer = Color(0xFF4A4458),
+    onSecondaryContainer = Color(0xFFE8DEF8),
+    tertiary = Color(0xFFEFB8C8),
+    onTertiary = Color(0xFF492532),
+    tertiaryContainer = Color(0xFF633B48),
+    onTertiaryContainer = Color(0xFFFFD8E4),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+    background = Color(0xFF141218),
+    onBackground = Color(0xFFE6E0E9),
+    surface = Color(0xFF141218),
+    onSurface = Color(0xFFE6E0E9),
+    surfaceVariant = Color(0xFF49454E),
+    onSurfaceVariant = Color(0xFFCAC4CF),
+    outline = Color(0xFF948F99),
+    outlineVariant = Color(0xFF49454E),
+    scrim = Color(0xFF000000),
+    inverseSurface = Color(0xFFE6E0E9),
+    inverseOnSurface = Color(0xFF322F35),
+    inversePrimary = Color(0xFF6D4AAD),
+    surfaceDim = Color(0xFF141218),
+    surfaceBright = Color(0xFF3B383E),
+    surfaceContainerLowest = Color(0xFF0F0D13),
+    surfaceContainerLow = Color(0xFF1D1B20),
+    surfaceContainer = Color(0xFF211F26),
+    surfaceContainerHigh = Color(0xFF2B2930),
+    surfaceContainerHighest = Color(0xFF36343B),
+)

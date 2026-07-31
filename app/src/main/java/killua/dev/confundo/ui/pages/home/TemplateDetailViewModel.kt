@@ -1,8 +1,12 @@
 package killua.dev.confundo.ui.pages.home
 
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import killua.dev.confundo.R
 import killua.dev.confundo.data.ConfigRepository
 import killua.dev.confundo.ui.viewmodel.BaseViewModel
+import killua.dev.confundo.ui.viewmodel.SnackbarUIEffect
 import killua.dev.confundo.ui.viewmodel.UIIntent
 import killua.dev.confundo.ui.viewmodel.UIState
 import kotlinx.coroutines.Job
@@ -28,7 +32,8 @@ sealed interface TemplateDetailIntent : UIIntent {
 @HiltViewModel
 class TemplateDetailViewModel @Inject constructor(
     private val repository: ConfigRepository,
-) : BaseViewModel<TemplateDetailIntent, TemplateDetailUiState, Nothing>(TemplateDetailUiState()) {
+    @param:ApplicationContext private val context: Context,
+) : BaseViewModel<TemplateDetailIntent, TemplateDetailUiState, SnackbarUIEffect>(TemplateDetailUiState()) {
 
     companion object {
         const val NEW_ID = "new"
@@ -46,8 +51,6 @@ class TemplateDetailViewModel @Inject constructor(
             TemplateDetailIntent.RandomFill -> randomFill()
         }
     }
-
-    override suspend fun onEffect(effect: Nothing) {}
 
     private fun load(templateId: String) {
         if (loaded) return
@@ -106,5 +109,6 @@ class TemplateDetailViewModel @Inject constructor(
     private suspend fun randomFill() {
         val id = ensureCreated(uiState.value.name.ifEmpty { "新模版" })
         repository.randomFillTemplate(id)
+        emitEffect(SnackbarUIEffect.ShowSnackbar(context.getString(R.string.random_fill_done)))
     }
 }

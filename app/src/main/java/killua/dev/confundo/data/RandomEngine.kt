@@ -1,5 +1,6 @@
 package killua.dev.confundo.data
 
+import android.os.Build
 import killua.dev.confundo.ui.pages.home.FieldKeys
 import java.security.SecureRandom
 import java.util.Locale
@@ -8,6 +9,12 @@ import java.util.UUID
 object RandomEngine {
 
     private val rng = SecureRandom()
+
+    /** Android 大版本号上限（Android 16）。 */
+    private const val MAX_ANDROID_VERSION = 16
+
+    /** SDK_INT 上限（API 36 = Android 16）。 */
+    private const val MAX_SDK_INT = 36
 
     private val operators = listOf(
         Operator("46000", "cn", "中国移动"),
@@ -46,7 +53,14 @@ object RandomEngine {
     private val batteryTechs = listOf("Li-ion", "Li-poly")
     private val meidPrefixes = listOf("A00000", "A10000", "990000", "860000")
 
-    fun generate(): Map<String, String> {
+    /**
+     * @param includeActivationTime 为 false 时「开机激活时间」保持为空。
+     * @param includeBootTime 为 false 时「开机时间」保持为空。
+     */
+    fun generate(
+        includeActivationTime: Boolean = true,
+        includeBootTime: Boolean = true,
+    ): Map<String, String> {
         val p = DeviceProfiles.random()
         val op = operators.securePick()
         val country = op.country
@@ -61,6 +75,16 @@ object RandomEngine {
             BatteryStatus.CHARGING, BatteryStatus.FULL -> BatteryPlugged.entries.securePick()
             else -> null
         }
+
+        // 版本随机化：严格落在 [本机真实值, 上限] 区间内，绝不低于本机真实值，也不超过上限。
+        val realSdk = Build.VERSION.SDK_INT
+        val realAndroidVersion = Build.VERSION.RELEASE?.substringBefore('.')?.toIntOrNull()
+            ?: sdkToAndroidVersion(realSdk)
+        val sdkInt = randomInt(realSdk.coerceAtMost(MAX_SDK_INT), MAX_SDK_INT)
+        val androidVersion = randomInt(
+            realAndroidVersion.coerceAtMost(MAX_ANDROID_VERSION),
+            MAX_ANDROID_VERSION,
+        )
 
         return buildMap {
             put(FieldKeys.DEVICE_ID, randomHex(16))
@@ -83,8 +107,8 @@ object RandomEngine {
             put(FieldKeys.WIFI_MAC, generateMac())
 
             put(FieldKeys.TIMEZONE, timezonesByCountry[country] ?: "Asia/Shanghai")
-            put(FieldKeys.ANDROID_VERSION, p.androidVersion)
-            put(FieldKeys.SDK_INT, p.sdkInt.toString())
+            put(FieldKeys.ANDROID_VERSION, androidVersion.toString())
+            put(FieldKeys.SDK_INT, sdkInt.toString())
             put(FieldKeys.LOCALE, localeByCountry[country] ?: "en_US")
             put(FieldKeys.MODEL, p.model)
             put(FieldKeys.DEVICE, p.device)
@@ -113,8 +137,14 @@ object RandomEngine {
             put(FieldKeys.BATTERY_TECHNOLOGY, batteryTechs.securePick())
 
             val now = System.currentTimeMillis()
-            put(FieldKeys.ACTIVATION_TIME, (now - daysMs(randomInt(30, 720))).toString())
-            put(FieldKeys.BOOT_TIME, (now - hoursMs(randomInt(1, 2400))).toString())
+            put(
+                FieldKeys.ACTIVATION_TIME,
+                if (includeActivationTime) (now - daysMs(randomInt(30, 720))).toString() else "",
+            )
+            put(
+                FieldKeys.BOOT_TIME,
+                if (includeBootTime) (now - hoursMs(randomInt(1, 2400))).toString() else "",
+            )
             put(FieldKeys.IS_24H, tf())
 
             // Google 服务
@@ -215,6 +245,17 @@ object RandomEngine {
     private fun randomUpper(): Char = ('A'.code + rng.nextInt(26)).toChar()
 
     private fun randomInt(min: Int, max: Int): Int = min + rng.nextInt(max - min + 1)
+
+    /** 当 Build.VERSION.RELEASE 非数字（如预览版代号）时，由 SDK_INT 推断大版本号。 */
+    private fun sdkToAndroidVersion(sdk: Int): Int = when (sdk) {
+        in Int.MIN_VALUE..29 -> 10
+        30 -> 11
+        31, 32 -> 12
+        33 -> 13
+        34 -> 14
+        35 -> 15
+        else -> MAX_ANDROID_VERSION
+    }
 
     private fun <T> List<T>.securePick(): T = this[rng.nextInt(size)]
 

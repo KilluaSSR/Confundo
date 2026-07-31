@@ -3,6 +3,20 @@
     <string name="nav_home">首页</string>
     <string name="nav_settings">设置</string>
     <string name="menu_show_system_apps">系统应用</string>
+    <!-- Search / filter / sort -->
+    <string name="search_hint">搜索应用名称或包名</string>
+    <string name="cd_search">搜索</string>
+    <string name="cd_search_clear">清除搜索</string>
+    <string name="cd_search_back">返回</string>
+    <string name="cd_sort">排序方式</string>
+    <string name="search_empty">未找到匹配的应用</string>
+    <string name="filter_all">全部</string>
+    <string name="filter_enabled">已启用</string>
+    <string name="filter_disabled">未启用</string>
+    <string name="sort_title">排序方式</string>
+    <string name="sort_name_asc">名称 A→Z</string>
+    <string name="sort_name_desc">名称 Z→A</string>
+    <string name="sort_enabled_first">已启用优先</string>
     <string name="fab_apply_all">一键应用</string>
     <string name="fab_template_manage">模版管理</string>
     <string name="toolbar_select_all">全选</string>
@@ -140,4 +154,54 @@
     <string name="settings_run_now_done">已触发重置任务</string>
     <string name="settings_last_run">上次重置：%1$s</string>
     <string name="settings_last_run_never">尚未执行</string>
+
+    <!-- Accessibility content descriptions -->
+    <string name="cd_back">返回</string>
+    <string name="cd_more_options">更多选项</string>
+    <string name="cd_new_template">新建模版</string>
+    <string name="cd_edit_name">编辑名称</string>
+    <string name="cd_app_enabled">已启用伪装</string>
+    <string name="cd_app_disabled">未启用伪装</string>
+
+    <!-- Operation feedback (Snackbar) -->
+    <string name="feedback_enabled_done">已开启 %1$d 个应用</string>
+    <string name="feedback_disabled_done">已关闭 %1$d 个应用</string>
+    <string name="feedback_reset_on_done">已对 %1$d 个应用开启自动重置</string>
+    <string name="feedback_reset_off_done">已对 %1$d 个应用关闭自动重置</string>
+    <string name="feedback_apply_template_done">已将模版应用到 %1$d 个应用</string>
+    <string name="feedback_template_deleted">已删除 %1$d 个模版</string>
+
+    <!-- Delete confirmation -->
+    <string name="dialog_delete_template_title">删除模版？</string>
+    <string name="dialog_delete_template_message">将永久删除选中的 %1$d 个模版，此操作无法撤销。</string>
+    <string name="dialog_delete">删除</string>
+
+    <!-- Empty state -->
+    <string name="template_empty_action">新建模版</string>
+
+    <!-- High-risk app warning -->
+    <string name="warning_high_risk_title">高风险应用</string>
+    <string name="warning_high_risk_message">为该应用伪装设备指纹可能导致账号异常甚至封禁，请谨慎操作，切勿开启自动重置。</string>
+
+    <!-- Appearance settings -->
+    <string name="settings_appearance_title">外观</string>
+    <string name="settings_dark_mode_title">深色模式</string>
+    <string name="settings_dark_mode_system">跟随系统</string>
+    <string name="settings_dark_mode_light">浅色</string>
+    <string name="settings_dark_mode_dark">深色</string>
+    <string name="settings_dynamic_color_title">动态取色</string>
+    <string name="settings_dynamic_color_summary">使用系统壁纸配色（Android 12 及以上）</string>
+
+    <!-- Time field settings -->
+    <string name="settings_time_title">时间字段</string>
+    <string name="settings_time_randomize_activation">随机化开机激活时间</string>
+    <string name="settings_time_randomize_boot">随机化开机时间</string>
+    <string name="settings_time_summary">关闭后，随机化时不会填充这两个时间字段，保持为空。</string>
+    <string name="settings_time_clear_activation">清除所有开机激活时间</string>
+    <string name="settings_time_clear_boot">清除所有开机时间</string>
+    <string name="settings_time_clear_dialog_title">确认清除？</string>
+    <string name="settings_time_clear_activation_confirm">将清空所有应用的「开机激活时间」，此操作无法撤销。</string>
+    <string name="settings_time_clear_boot_confirm">将清空所有应用的「开机时间」，此操作无法撤销。</string>
+    <string name="settings_time_cleared_activation">已清除所有开机激活时间</string>
+    <string name="settings_time_cleared_boot">已清除所有开机时间</string>
 </resources>

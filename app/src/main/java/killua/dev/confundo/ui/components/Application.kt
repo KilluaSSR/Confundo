@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -30,10 +31,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import killua.dev.confundo.R
+import killua.dev.confundo.ui.theme.Dimens
+import killua.dev.confundo.ui.theme.Spacing
 
 enum class AppPosition { Single, Top, Middle, Bottom }
 
@@ -47,11 +57,28 @@ data class AppItemData(
     val isSpoofingEnabled: Boolean = false,
 )
 
+internal fun groupedShape(position: AppPosition, cornerRadius: Dp): RoundedCornerShape = when (position) {
+    AppPosition.Single -> RoundedCornerShape(cornerRadius)
+    AppPosition.Top -> RoundedCornerShape(
+        topStart = cornerRadius,
+        topEnd = cornerRadius,
+        bottomStart = 0.dp,
+        bottomEnd = 0.dp,
+    )
+    AppPosition.Middle -> RoundedCornerShape(0.dp)
+    AppPosition.Bottom -> RoundedCornerShape(
+        topStart = 0.dp,
+        topEnd = 0.dp,
+        bottomStart = cornerRadius,
+        bottomEnd = cornerRadius,
+    )
+}
+
 @Composable
 fun AppList(
     modifier: Modifier = Modifier,
     apps: List<AppItemData>,
-    cornerRadius: Dp = 20.dp,
+    cornerRadius: Dp = Dimens.ListCorner,
     selectedPkgs: Set<String> = emptySet(),
     onClick: (String) -> Unit = {},
     onLongClick: (String) -> Unit = {},
@@ -77,7 +104,7 @@ fun AppList(
                 onLongClick = { onLongClick(appData.packageName) },
             )
             if (index < apps.lastIndex) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         }
     }
@@ -87,53 +114,50 @@ fun AppList(
 fun AppListRow(
     appData: AppItemData,
     position: AppPosition,
-    cornerRadius: Dp = 20.dp,
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = Dimens.ListCorner,
     selected: Boolean = false,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {},
 ) {
+    // 使用语义化的 surface 层级，而非用 alpha 稀释 container（后者会破坏对比度与深浅色一致性）。
     val containerColor = if (selected) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+        MaterialTheme.colorScheme.secondaryContainer
     } else {
-        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.25f)
+        MaterialTheme.colorScheme.surfaceContainerHigh
     }
 
-    val shape = when (position) {
-        AppPosition.Single -> RoundedCornerShape(cornerRadius)
-        AppPosition.Top -> RoundedCornerShape(
-            topStart = cornerRadius,
-            topEnd = cornerRadius,
-            bottomStart = 0.dp,
-            bottomEnd = 0.dp
-        )
-        AppPosition.Middle -> RoundedCornerShape(0.dp)
-        AppPosition.Bottom -> RoundedCornerShape(
-            topStart = 0.dp,
-            topEnd = 0.dp,
-            bottomStart = cornerRadius,
-            bottomEnd = cornerRadius
-        )
-    }
+    val shape = groupedShape(position, cornerRadius)
+
+    val stateText = stringResource(
+        if (appData.isSpoofingEnabled) R.string.cd_app_enabled else R.string.cd_app_disabled
+    )
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = shape,
         color = containerColor,
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(min = Dimens.MinTouchTarget)
                 .clip(shape)
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick,
                 )
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = Spacing.lg, vertical = Spacing.md)
+                .semantics(mergeDescendants = true) {
+                    role = Role.Button
+                    contentDescription = "${appData.appName}, ${appData.packageName}"
+                    stateDescription = stateText
+                },
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(40.dp)
                     .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -142,28 +166,27 @@ fun AppListRow(
                         bitmap = appData.iconBitmap,
                         contentDescription = null,
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(40.dp)
                             .clip(CircleShape)
                     )
                 } else {
                     Icon(
                         imageVector = appData.icon,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(24.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(Spacing.lg))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = appData.appName,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
                 )
-                Spacer(modifier = Modifier.height(1.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = appData.packageName,
                     style = MaterialTheme.typography.bodySmall,
@@ -176,7 +199,7 @@ fun AppListRow(
                     imageVector = Icons.Rounded.CheckCircle,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                    tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.width(4.dp))
             }

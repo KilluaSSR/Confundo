@@ -21,6 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
@@ -46,10 +49,20 @@ fun Highlight(
 
     val textColor = contentColorFor(backgroundColor)
 
+    // 警示类高亮对无障碍声明为 live region，便于 TalkBack 主动播报安全提示。
+    val a11yModifier = when (warningType) {
+        HighlightType.WARNING, HighlightType.CAUTION ->
+            Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+        HighlightType.INFO -> Modifier
+    }
+
     Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = backgroundColor
+        modifier = modifier
+            .fillMaxWidth()
+            .then(a11yModifier),
+        colors = CardDefaults.cardColors(
+            containerColor = backgroundColor,
+            contentColor = textColor,
         ),
     ) {
         Column(

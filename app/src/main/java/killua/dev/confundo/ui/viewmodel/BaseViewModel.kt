@@ -55,7 +55,7 @@ abstract class BaseViewModel<I : UIIntent, S : UIState, E : UIEffect>(state: S) 
         Dispatchers.IO, block
     )
 
-    fun emitState(state: S) {
+    protected fun emitState(state: S) {
         _uiState.value = state
     }
 
@@ -66,11 +66,11 @@ abstract class BaseViewModel<I : UIIntent, S : UIState, E : UIEffect>(state: S) 
     fun launchOnMain(block: suspend CoroutineScope.() -> Unit) =
         viewModelScope.launch(block = block)
 
-    suspend fun emitEffect(effect: E) {
+    protected suspend fun emitEffect(effect: E) {
         _effects.emit(effect)
     }
 
-    fun emitEffectOnIO(effect: E) = launchOnIO { emitEffect(effect) }
+    protected fun emitEffectOnIO(effect: E) = launchOnIO { emitEffect(effect) }
     fun emitIntentOnIO(intent: I) = launchOnIO { emitIntent(intent) }
     fun launchOnIO(block: suspend CoroutineScope.() -> Unit) =
         viewModelScope.launch(context = Dispatchers.IO, block = block)
@@ -80,5 +80,4 @@ abstract class BaseViewModel<I : UIIntent, S : UIState, E : UIEffect>(state: S) 
     }
 
     protected abstract suspend fun onEvent(state: S, intent: I)
-    protected abstract suspend fun onEffect(effect: E)
 }

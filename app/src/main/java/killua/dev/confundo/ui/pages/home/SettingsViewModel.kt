@@ -3,9 +3,12 @@ package killua.dev.confundo.ui.pages.home
 import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import killua.dev.confundo.R
 import killua.dev.confundo.data.AppSettings
+import killua.dev.confundo.data.ConfigRepository
 import killua.dev.confundo.data.SettingsRepository
 import killua.dev.confundo.ui.viewmodel.BaseViewModel
+import killua.dev.confundo.ui.viewmodel.SnackbarUIEffect
 import killua.dev.confundo.ui.viewmodel.UIIntent
 import killua.dev.confundo.ui.viewmodel.UIState
 import killua.dev.confundo.work.RefreshWorker
@@ -15,6 +18,10 @@ data class SettingsUiState(
     val autoRefreshEnabled: Boolean = false,
     val intervalDays: Int = AppSettings.DEFAULT_INTERVAL_DAYS,
     val lastRunMillis: Long = 0L,
+    val darkMode: Int = AppSettings.DARK_MODE_SYSTEM,
+    val dynamicColor: Boolean = true,
+    val randomizeActivationTime: Boolean = false,
+    val randomizeBootTime: Boolean = false,
 ) : UIState
 
 sealed interface SettingsIntent : UIIntent {
@@ -22,13 +29,20 @@ sealed interface SettingsIntent : UIIntent {
     data class SetAutoRefresh(val enabled: Boolean) : SettingsIntent
     data class SetInterval(val days: Int) : SettingsIntent
     data object RunNow : SettingsIntent
+    data class SetDarkMode(val mode: Int) : SettingsIntent
+    data class SetDynamicColor(val enabled: Boolean) : SettingsIntent
+    data class SetRandomizeActivationTime(val enabled: Boolean) : SettingsIntent
+    data class SetRandomizeBootTime(val enabled: Boolean) : SettingsIntent
+    data object ClearAllActivationTime : SettingsIntent
+    data object ClearAllBootTime : SettingsIntent
 }
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
+    private val configRepository: ConfigRepository,
     @param:ApplicationContext private val context: Context,
-) : BaseViewModel<SettingsIntent, SettingsUiState, Nothing>(SettingsUiState()) {
+) : BaseViewModel<SettingsIntent, SettingsUiState, SnackbarUIEffect>(SettingsUiState()) {
 
     private var observing = false
 
@@ -37,11 +51,28 @@ class SettingsViewModel @Inject constructor(
             SettingsIntent.Load -> observe()
             is SettingsIntent.SetAutoRefresh -> setAutoRefresh(intent.enabled)
             is SettingsIntent.SetInterval -> setInterval(intent.days)
-            SettingsIntent.RunNow -> RefreshWorker.runNow(context)
+            SettingsIntent.RunNow -> runNow()
+            is SettingsIntent.SetDarkMode -> settingsRepository.setDarkMode(intent.mode)
+            is SettingsIntent.SetDynamicColor -> settingsRepository.setDynamicColor(intent.enabled)
+            is SettingsIntent.SetRandomizeActivationTime ->
+                settingsRepository.setRandomizeActivationTime(intent.enabled)
+            is SettingsIntent.SetRandomizeBootTime ->
+                settingsRepository.setRandomizeBootTime(intent.enabled)
+            SettingsIntent.ClearAllActivationTime -> clearAll(
+                FieldKeys.ACTIVATION_TIME,
+                R.string.settings_time_cleared_activation,
+            )
+            SettingsIntent.ClearAllBootTime -> clearAll(
+                FieldKeys.BOOT_TIME,
+                R.string.settings_time_cleared_boot,
+            )
         }
     }
 
-    override suspend fun onEffect(effect: Nothing) {}
+    private suspend fun clearAll(key: String, messageRes: Int) {
+        configRepository.clearFieldForAll(key)
+        emitEffect(SnackbarUIEffect.ShowSnackbar(context.getString(messageRes)))
+    }
 
     private fun observe() {
         if (observing) return
@@ -53,10 +84,19 @@ class SettingsViewModel @Inject constructor(
                         autoRefreshEnabled = s.autoRefreshEnabled,
                         intervalDays = s.intervalDays,
                         lastRunMillis = s.lastRunMillis,
+                        darkMode = s.darkMode,
+                        dynamicColor = s.dynamicColor,
+                        randomizeActivationTime = s.randomizeActivationTime,
+                        randomizeBootTime = s.randomizeBootTime,
                     )
                 )
             }
         }
+    }
+
+    private suspend fun runNow() {
+        RefreshWorker.runNow(context)
+        emitEffect(SnackbarUIEffect.ShowSnackbar(context.getString(R.string.settings_run_now_done)))
     }
 
     private suspend fun setAutoRefresh(enabled: Boolean) {

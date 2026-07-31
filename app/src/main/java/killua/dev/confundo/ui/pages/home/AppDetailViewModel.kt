@@ -3,8 +3,10 @@ package killua.dev.confundo.ui.pages.home
 import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import killua.dev.confundo.R
 import killua.dev.confundo.data.ConfigRepository
 import killua.dev.confundo.ui.viewmodel.BaseViewModel
+import killua.dev.confundo.ui.viewmodel.SnackbarUIEffect
 import killua.dev.confundo.ui.viewmodel.UIIntent
 import killua.dev.confundo.ui.viewmodel.UIState
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +36,7 @@ sealed interface AppDetailIntent : UIIntent {
 class AppDetailViewModel @Inject constructor(
     private val repository: ConfigRepository,
     @param:ApplicationContext private val context: Context,
-) : BaseViewModel<AppDetailIntent, AppDetailUiState, Nothing>(AppDetailUiState()) {
+) : BaseViewModel<AppDetailIntent, AppDetailUiState, SnackbarUIEffect>(AppDetailUiState()) {
 
     private var observing = false
 
@@ -44,11 +46,12 @@ class AppDetailViewModel @Inject constructor(
             is AppDetailIntent.SetEnabled -> repository.setEnabled(uiState.value.packageName, intent.enabled)
             is AppDetailIntent.SetAutoReset -> repository.setAutoReset(uiState.value.packageName, intent.autoReset)
             is AppDetailIntent.UpdateField -> repository.updateField(uiState.value.packageName, intent.key, intent.value)
-            AppDetailIntent.RandomFill -> repository.randomFill(uiState.value.packageName)
+            AppDetailIntent.RandomFill -> {
+                repository.randomFill(uiState.value.packageName)
+                emitEffect(SnackbarUIEffect.ShowSnackbar(context.getString(R.string.random_fill_done)))
+            }
         }
     }
-
-    override suspend fun onEffect(effect: Nothing) {}
 
     private suspend fun load(pkg: String) {
         if (observing) return

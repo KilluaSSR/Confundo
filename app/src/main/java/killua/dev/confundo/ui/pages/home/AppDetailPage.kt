@@ -4,62 +4,87 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import killua.dev.confundo.R
 import killua.dev.confundo.data.FieldCatalog
 import killua.dev.confundo.data.FieldSpec
 import killua.dev.confundo.ui.components.AppDetailItem
 import killua.dev.confundo.ui.components.CardSwitch
 import killua.dev.confundo.ui.components.FieldInputDialog
+import killua.dev.confundo.ui.components.Highlight
+import killua.dev.confundo.ui.components.HighlightType
+import killua.dev.confundo.ui.components.ObserveSnackbarEffects
 import killua.dev.confundo.ui.components.PageLoadingIndicator
 import killua.dev.confundo.ui.components.SectionHeader
+import killua.dev.confundo.ui.theme.Dimens
 import killua.dev.confundo.utils.LocalNavController
+
+// 高风险应用：为其伪装指纹可能导致账号异常/封禁（见 README 特别提醒）。
+private val HighRiskPackages = setOf("com.tencent.mm")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) {
     val navController = LocalNavController.current!!
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(pkg) { viewModel.emitIntentOnIO(AppDetailIntent.Load(pkg)) }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    ObserveSnackbarEffects(viewModel.effects, snackbarHostState)
 
     var editingSpec by remember { mutableStateOf<FieldSpec?>(null) }
     var editingTitle by remember { mutableStateOf("") }
     var editingValue by remember { mutableStateOf("") }
 
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(state.appName.ifEmpty { pkg }) },
+                scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_back)
+                        )
                     }
                 },
                 actions = {
@@ -70,10 +95,6 @@ fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) 
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
             )
         }
     ) { padding ->
@@ -89,8 +110,21 @@ fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) 
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
+                            .widthIn(max = Dimens.ContentMaxWidth)
+                            .align(Alignment.TopCenter)
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))
+
+                        if (pkg in HighRiskPackages) {
+                            Highlight(
+                                warningType = HighlightType.CAUTION,
+                                icon = Icons.Filled.Warning,
+                                title = stringResource(R.string.warning_high_risk_title),
+                                text = stringResource(R.string.warning_high_risk_message),
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
 
                         CardSwitch(
                             text = stringResource(R.string.switch_enable),

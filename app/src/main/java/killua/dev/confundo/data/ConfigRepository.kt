@@ -1,6 +1,7 @@
 package killua.dev.confundo.data
 
 import android.content.Context
+import android.content.pm.PackageManager
 import com.highcapable.yukihookapi.hook.factory.prefs
 import dagger.hilt.android.qualifiers.ApplicationContext
 import killua.dev.confundo.ui.pages.home.FieldKeys
@@ -23,6 +24,7 @@ import javax.inject.Singleton
 @Singleton
 class ConfigRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
+    private val settingsRepository: SettingsRepository,
 ) {
 
     companion object {
@@ -112,21 +114,27 @@ class ConfigRepository @Inject constructor(
     }
 
     /** 用一套随机值覆盖该 App 的所有字段，并强制启用。 */
-    suspend fun randomFill(pkg: String) = write(pkg) {
-        val values = RandomEngine.generate()
-        context.prefs(pkg).edit {
-            putBoolean(FieldKeys.ENABLED, true)
-            values.forEach { (k, v) -> putString(k, v) }
+    suspend fun randomFill(pkg: String) {
+        val s = settingsRepository.current()
+        write(pkg) {
+            val values = RandomEngine.generate(s.randomizeActivationTime, s.randomizeBootTime)
+            context.prefs(pkg).edit {
+                putBoolean(FieldKeys.ENABLED, true)
+                values.forEach { (k, v) -> putString(k, v) }
+            }
         }
     }
 
     /** 一键应用：对目标 App 启用并随机填充。 */
-    suspend fun applyRandom(pkg: String, autoReset: Boolean) = write(pkg) {
-        val values = RandomEngine.generate()
-        context.prefs(pkg).edit {
-            putBoolean(FieldKeys.ENABLED, true)
-            putBoolean(FieldKeys.AUTO_RESET, autoReset)
-            values.forEach { (k, v) -> putString(k, v) }
+    suspend fun applyRandom(pkg: String, autoReset: Boolean) {
+        val s = settingsRepository.current()
+        write(pkg) {
+            val values = RandomEngine.generate(s.randomizeActivationTime, s.randomizeBootTime)
+            context.prefs(pkg).edit {
+                putBoolean(FieldKeys.ENABLED, true)
+                putBoolean(FieldKeys.AUTO_RESET, autoReset)
+                values.forEach { (k, v) -> putString(k, v) }
+            }
         }
     }
 
@@ -140,14 +148,36 @@ class ConfigRepository @Inject constructor(
         }
     }
 
-    suspend fun reshuffleFilledFields(pkg: String) = write(pkg) {
-        val current = readAppConfig(pkg)
-        val fresh = RandomEngine.generate()
-        context.prefs(pkg).edit {
-            current.fields.forEach { (key, oldValue) ->
-                if (oldValue.isNotBlank()) {
-                    fresh[key]?.let { putString(key, it) }
+    suspend fun reshuffleFilledFields(pkg: String) {
+        val s = settingsRepository.current()
+        write(pkg) {
+            val current = readAppConfig(pkg)
+            val fresh = RandomEngine.generate(s.randomizeActivationTime, s.randomizeBootTime)
+            context.prefs(pkg).edit {
+                current.fields.forEach { (key, oldValue) ->
+                    if (oldValue.isNotBlank()) {
+                        // 仅用非空的新值刷新；空值（如关闭随机化的时间字段）不覆盖，避免误清除。
+                        fresh[key]?.takeIf { it.isNotBlank() }?.let { putString(key, it) }
+                    }
                 }
+            }
+        }
+    }
+
+    /** 清空所有 App 的某个字段（仅处理当前存在非空值的 App）。 */
+    suspend fun clearFieldForAll(key: String) = withContext(Dispatchers.IO) {
+        val pm = context.packageManager
+        val pkgs = runCatching {
+            pm.getInstalledApplications(PackageManager.GET_META_DATA).map { it.packageName }
+        }.getOrDefault(emptyList()).filter { it != context.packageName }
+
+        pkgs.forEach { pkg ->
+            val current = runCatching { context.prefs(pkg).getString(key, "") }.getOrDefault("")
+            if (current.isNotBlank()) {
+                writeMutex.withLock {
+                    context.prefs(pkg).edit { putString(key, "") }
+                }
+                notifyChanged(pkg)
             }
         }
     }
@@ -248,8 +278,9 @@ class ConfigRepository @Inject constructor(
     }
 
     suspend fun randomFillTemplate(id: String) {
+        val s = settingsRepository.current()
         writeTemplates(listOf(templatePrefs(id))) {
-            val values = RandomEngine.generate()
+            val values = RandomEngine.generate(s.randomizeActivationTime, s.randomizeBootTime)
             context.prefs(templatePrefs(id)).edit {
                 values.forEach { (k, v) -> putString(k, v) }
             }

@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,11 +21,22 @@ data class AppSettings(
     val autoRefreshEnabled: Boolean = false,
     val intervalDays: Int = DEFAULT_INTERVAL_DAYS,
     val lastRunMillis: Long = 0L,
+    /** 0 = 跟随系统, 1 = 浅色, 2 = 深色 */
+    val darkMode: Int = DARK_MODE_SYSTEM,
+    val dynamicColor: Boolean = true,
+    /** 是否随机化「开机激活时间」。关闭时该字段保持为空。 */
+    val randomizeActivationTime: Boolean = false,
+    /** 是否随机化「开机时间」。关闭时该字段保持为空。 */
+    val randomizeBootTime: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_INTERVAL_DAYS = 1
         const val MIN_INTERVAL_DAYS = 1
         const val MAX_INTERVAL_DAYS = 7
+
+        const val DARK_MODE_SYSTEM = 0
+        const val DARK_MODE_LIGHT = 1
+        const val DARK_MODE_DARK = 2
     }
 }
 
@@ -36,6 +48,10 @@ class SettingsRepository @Inject constructor(
         val AUTO_REFRESH = booleanPreferencesKey("auto_refresh_enabled")
         val INTERVAL_DAYS = intPreferencesKey("auto_refresh_interval_days")
         val LAST_RUN = longPreferencesKey("auto_refresh_last_run")
+        val DARK_MODE = intPreferencesKey("dark_mode")
+        val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val RANDOMIZE_ACTIVATION_TIME = booleanPreferencesKey("randomize_activation_time")
+        val RANDOMIZE_BOOT_TIME = booleanPreferencesKey("randomize_boot_time")
     }
 
     val settings: Flow<AppSettings> = context.settingsDataStore.data.map { p ->
@@ -44,7 +60,30 @@ class SettingsRepository @Inject constructor(
             intervalDays = (p[Keys.INTERVAL_DAYS] ?: AppSettings.DEFAULT_INTERVAL_DAYS)
                 .coerceIn(AppSettings.MIN_INTERVAL_DAYS, AppSettings.MAX_INTERVAL_DAYS),
             lastRunMillis = p[Keys.LAST_RUN] ?: 0L,
+            darkMode = p[Keys.DARK_MODE] ?: AppSettings.DARK_MODE_SYSTEM,
+            dynamicColor = p[Keys.DYNAMIC_COLOR] ?: true,
+            randomizeActivationTime = p[Keys.RANDOMIZE_ACTIVATION_TIME] ?: false,
+            randomizeBootTime = p[Keys.RANDOMIZE_BOOT_TIME] ?: false,
         )
+    }
+
+    /** 同步读取当前设置快照（供仓库层在生成随机值时判断开关）。 */
+    suspend fun current(): AppSettings = settings.first()
+
+    suspend fun setRandomizeActivationTime(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.RANDOMIZE_ACTIVATION_TIME] = enabled }
+    }
+
+    suspend fun setRandomizeBootTime(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.RANDOMIZE_BOOT_TIME] = enabled }
+    }
+
+    suspend fun setDarkMode(mode: Int) {
+        context.settingsDataStore.edit { it[Keys.DARK_MODE] = mode }
+    }
+
+    suspend fun setDynamicColor(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.DYNAMIC_COLOR] = enabled }
     }
 
     suspend fun setAutoRefreshEnabled(enabled: Boolean) {

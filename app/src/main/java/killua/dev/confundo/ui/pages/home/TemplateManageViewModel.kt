@@ -1,8 +1,12 @@
 package killua.dev.confundo.ui.pages.home
 
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import killua.dev.confundo.R
 import killua.dev.confundo.data.ConfigRepository
 import killua.dev.confundo.ui.viewmodel.BaseViewModel
+import killua.dev.confundo.ui.viewmodel.SnackbarUIEffect
 import killua.dev.confundo.ui.viewmodel.UIIntent
 import killua.dev.confundo.ui.viewmodel.UIState
 import javax.inject.Inject
@@ -27,18 +31,27 @@ sealed interface TemplateManageIntent : UIIntent {
 @HiltViewModel
 class TemplateManageViewModel @Inject constructor(
     private val repository: ConfigRepository,
-) : BaseViewModel<TemplateManageIntent, TemplateManageUiState, Nothing>(TemplateManageUiState()) {
+    @param:ApplicationContext private val context: Context,
+) : BaseViewModel<TemplateManageIntent, TemplateManageUiState, SnackbarUIEffect>(TemplateManageUiState()) {
 
     private var observing = false
 
     override suspend fun onEvent(state: TemplateManageUiState, intent: TemplateManageIntent) {
         when (intent) {
             TemplateManageIntent.Load -> observe()
-            is TemplateManageIntent.DeleteSelected -> repository.deleteTemplates(intent.ids)
+            is TemplateManageIntent.DeleteSelected -> deleteSelected(intent.ids)
         }
     }
 
-    override suspend fun onEffect(effect: Nothing) {}
+    private suspend fun deleteSelected(ids: List<String>) {
+        if (ids.isEmpty()) return
+        repository.deleteTemplates(ids)
+        emitEffect(
+            SnackbarUIEffect.ShowSnackbar(
+                context.getString(R.string.feedback_template_deleted, ids.size)
+            )
+        )
+    }
 
     private fun observe() {
         if (observing) return
