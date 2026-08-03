@@ -204,4 +204,16 @@
     <string name="settings_time_clear_boot_confirm">将清空所有应用的「开机时间」，此操作无法撤销。</string>
     <string name="settings_time_cleared_activation">已清除所有开机激活时间</string>
     <string name="settings_time_cleared_boot">已清除所有开机时间</string>
+
+    <!-- Backup & restore -->
+    <string name="settings_backup_title">备份与恢复</string>
+    <string name="settings_backup_summary">将应用配置导出为文件。</string>
+    <string name="settings_backup_export">导出备份</string>
+    <string name="settings_backup_import">导入恢复</string>
+    <string name="settings_backup_export_done">已导出备份</string>
+    <string name="settings_backup_export_failed">导出失败：%1$s</string>
+    <string name="settings_backup_import_done">恢复完成：应用 %1$d 个，跳过 %2$d 个未安装应用，模版 %3$d 个</string>
+    <string name="settings_backup_import_failed">恢复失败：%1$s</string>
+    <string name="settings_backup_import_confirm_title">确认恢复？</string>
+    <string name="settings_backup_import_confirm_message">恢复将用备份文件中的数据覆盖当前的应用配置、模版与设置，已卸载的应用会被自动跳过。此操作无法撤销。</string>
 </resources>

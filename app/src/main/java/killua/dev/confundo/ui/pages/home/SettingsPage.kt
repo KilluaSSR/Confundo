@@ -1,5 +1,7 @@
 package killua.dev.confundo.ui.pages.home
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -103,6 +105,7 @@ fun SettingsPageContent(
             ) {
                 RefreshSection(state, onIntent)
                 TimeFieldsSection(state, onIntent)
+                BackupSection(onIntent)
                 AppearanceSection(state, onIntent)
                 Spacer(Modifier.height(Spacing.lg))
             }
@@ -184,6 +187,79 @@ private fun TimeFieldsSection(state: SettingsUiState, onIntent: (SettingsIntent)
             },
             dismissButton = {
                 TextButton(onClick = { pendingClear = null }) {
+                    Text(stringResource(R.string.dialog_cancel))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun BackupSection(onIntent: (SettingsIntent) -> Unit) {
+    var pendingImportUri by remember { mutableStateOf<android.net.Uri?>(null) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri -> uri?.let { onIntent(SettingsIntent.ExportBackup(it)) } }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri -> pendingImportUri = uri }
+
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        Column {
+            SectionHeader(title = stringResource(R.string.settings_backup_title))
+
+            Text(
+                text = stringResource(R.string.settings_backup_summary),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+            )
+
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US)
+                            .format(Date())
+                        exportLauncher.launch("Confundo_backup_$timestamp.json")
+                    },
+                ) {
+                    Text(stringResource(R.string.settings_backup_export))
+                }
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { importLauncher.launch(arrayOf("application/json", "*/*")) },
+                ) {
+                    Text(stringResource(R.string.settings_backup_import))
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+
+    pendingImportUri?.let { uri ->
+        AlertDialog(
+            onDismissRequest = { pendingImportUri = null },
+            title = { Text(stringResource(R.string.settings_backup_import_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_backup_import_confirm_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onIntent(SettingsIntent.ImportBackup(uri))
+                    pendingImportUri = null
+                }) {
+                    Text(stringResource(R.string.dialog_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingImportUri = null }) {
                     Text(stringResource(R.string.dialog_cancel))
                 }
             },

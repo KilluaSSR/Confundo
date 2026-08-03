@@ -182,6 +182,64 @@ class ConfigRepository @Inject constructor(
         }
     }
 
+    /** 当前设备已安装的包名集合（用于恢复时判断某个应用是否仍然存在）。 */
+    suspend fun installedPackages(): Set<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            context.packageManager
+                .getInstalledApplications(PackageManager.GET_META_DATA)
+                .map { it.packageName }
+                .toSet()
+        }.getOrDefault(emptySet())
+    }
+
+    /**
+     * 导出所有「有意义」的 App 配置：即已启用、开启自动重置，或存在任意非空字段的应用。
+     * 返回包名到配置的映射，供备份使用。
+     */
+    suspend fun exportConfigs(): Map<String, AppConfig> = withContext(Dispatchers.IO) {
+        val pm = context.packageManager
+        val pkgs = runCatching {
+            pm.getInstalledApplications(PackageManager.GET_META_DATA).map { it.packageName }
+        }.getOrDefault(emptyList()).filter { it != context.packageName }
+
+        pkgs.mapNotNull { pkg ->
+            val cfg = runCatching { readAppConfig(pkg) }.getOrNull() ?: return@mapNotNull null
+            val hasData = cfg.enabled || cfg.autoReset || cfg.fields.values.any { it.isNotBlank() }
+            if (hasData) pkg to cfg else null
+        }.toMap()
+    }
+
+    /** 将一整份配置写入指定 App（恢复时使用）。 */
+    suspend fun writeAppConfig(pkg: String, config: AppConfig) = write(pkg) {
+        context.prefs(pkg).edit {
+            putBoolean(FieldKeys.ENABLED, config.enabled)
+            putBoolean(FieldKeys.AUTO_RESET, config.autoReset)
+            config.fields.forEach { (k, v) -> putString(k, v) }
+        }
+    }
+
+    /** 导出全部模版详情（供备份使用）。 */
+    suspend fun exportTemplates(): List<TemplateDetail> = withContext(Dispatchers.IO) {
+        readTemplateIds().map { id ->
+            val name = runCatching {
+                context.prefs(templatePrefs(id)).getString(TEMPLATE_NAME_KEY, "")
+            }.getOrDefault("")
+            TemplateDetail(id, name, readTemplateFields(id))
+        }
+    }
+
+    /** 导入单个模版（按 id 覆盖，若不存在则追加到列表）。 */
+    suspend fun importTemplate(detail: TemplateDetail) {
+        writeTemplates(listOf(TEMPLATES_PREFS, templatePrefs(detail.id))) {
+            context.prefs(templatePrefs(detail.id)).edit {
+                putString(TEMPLATE_NAME_KEY, detail.name)
+                detail.fields.forEach { (k, v) -> putString(k, v) }
+            }
+            val ids = readTemplateIds()
+            if (detail.id !in ids) writeTemplateIds(ids + detail.id)
+        }
+    }
+
     private suspend fun write(pkg: String, block: () -> Unit) {
         withContext(Dispatchers.IO) {
             writeMutex.withLock { block() }

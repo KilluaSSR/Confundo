@@ -110,4 +110,17 @@ class SettingsRepository @Inject constructor(
             }
         }
     }
+
+    /** 用备份中的设置覆盖当前设置（不还原 lastRunMillis）。 */
+    suspend fun importSettings(s: AppSettings) {
+        context.settingsDataStore.edit {
+            it[Keys.AUTO_REFRESH] = s.autoRefreshEnabled
+            it[Keys.INTERVAL_DAYS] = s.intervalDays
+                .coerceIn(AppSettings.MIN_INTERVAL_DAYS, AppSettings.MAX_INTERVAL_DAYS)
+            it[Keys.DARK_MODE] = s.darkMode
+            it[Keys.DYNAMIC_COLOR] = s.dynamicColor
+            it[Keys.RANDOMIZE_ACTIVATION_TIME] = s.randomizeActivationTime
+            it[Keys.RANDOMIZE_BOOT_TIME] = s.randomizeBootTime
+        }
+    }
 }
