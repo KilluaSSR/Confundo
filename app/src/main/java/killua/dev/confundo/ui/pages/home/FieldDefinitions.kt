@@ -5,6 +5,10 @@ object FieldKeys {
     const val ENABLED = "_enabled"
     const val AUTO_RESET = "_auto_reset"
 
+    const val GLOBAL_PREFS = "confundo_global"
+
+    const val NATIVE_HOOK_ENABLED = "_native_hook_enabled"
+
     const val DEVICE_ID = "device_id"
     const val ANDROID_ID = "android_id"
     const val SERIAL = "serial"

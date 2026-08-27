@@ -1,7 +1,10 @@
 package killua.dev.confundo.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -13,7 +16,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import killua.dev.confundo.ui.theme.ShapeRadius
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TextInputDialog(
     show: Boolean,
@@ -46,14 +51,24 @@ fun TextInputDialog(
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(input) }) {
+            TextButton(
+                onClick = { onConfirm(input) },
+                shapes = ButtonDefaults.shapes(),
+            ) {
                 Text(confirmText)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                shapes = ButtonDefaults.shapes(),
+            ) {
                 Text(dismissText)
             }
         },
+        shape = RoundedCornerShape(ShapeRadius.ExtraLarge),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }

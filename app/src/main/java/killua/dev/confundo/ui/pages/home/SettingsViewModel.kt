@@ -24,6 +24,8 @@ data class SettingsUiState(
     val dynamicColor: Boolean = true,
     val randomizeActivationTime: Boolean = false,
     val randomizeBootTime: Boolean = false,
+    val nativeHookEnabled: Boolean = false,
+    val backupInProgress: Boolean = false,
 ) : UIState
 
 sealed interface SettingsIntent : UIIntent {
@@ -35,6 +37,7 @@ sealed interface SettingsIntent : UIIntent {
     data class SetDynamicColor(val enabled: Boolean) : SettingsIntent
     data class SetRandomizeActivationTime(val enabled: Boolean) : SettingsIntent
     data class SetRandomizeBootTime(val enabled: Boolean) : SettingsIntent
+    data class SetNativeHook(val enabled: Boolean) : SettingsIntent
     data object ClearAllActivationTime : SettingsIntent
     data object ClearAllBootTime : SettingsIntent
     data class ExportBackup(val uri: Uri) : SettingsIntent
@@ -63,6 +66,7 @@ class SettingsViewModel @Inject constructor(
                 settingsRepository.setRandomizeActivationTime(intent.enabled)
             is SettingsIntent.SetRandomizeBootTime ->
                 settingsRepository.setRandomizeBootTime(intent.enabled)
+            is SettingsIntent.SetNativeHook -> setNativeHook(intent.enabled)
             SettingsIntent.ClearAllActivationTime -> clearAll(
                 FieldKeys.ACTIVATION_TIME,
                 R.string.settings_time_cleared_activation,
@@ -77,6 +81,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     private suspend fun exportBackup(uri: Uri) {
+        updateState { it.copy(backupInProgress = true) }
         runCatching { backupRepository.exportTo(uri) }
             .onSuccess {
                 emitEffect(
@@ -93,9 +98,11 @@ class SettingsViewModel @Inject constructor(
                     )
                 )
             }
+        updateState { it.copy(backupInProgress = false) }
     }
 
     private suspend fun importBackup(uri: Uri) {
+        updateState { it.copy(backupInProgress = true) }
         runCatching { backupRepository.restoreFrom(uri) }
             .onSuccess { summary ->
                 emitEffect(
@@ -119,6 +126,7 @@ class SettingsViewModel @Inject constructor(
                     )
                 )
             }
+        updateState { it.copy(backupInProgress = false) }
     }
 
     private suspend fun clearAll(key: String, messageRes: Int) {
@@ -140,10 +148,16 @@ class SettingsViewModel @Inject constructor(
                         dynamicColor = s.dynamicColor,
                         randomizeActivationTime = s.randomizeActivationTime,
                         randomizeBootTime = s.randomizeBootTime,
+                        nativeHookEnabled = configRepository.isNativeHookEnabled(),
                     )
                 )
             }
         }
+    }
+
+    private suspend fun setNativeHook(enabled: Boolean) {
+        configRepository.setNativeHookEnabled(enabled)
+        updateState { it.copy(nativeHookEnabled = enabled) }
     }
 
     private suspend fun runNow() {

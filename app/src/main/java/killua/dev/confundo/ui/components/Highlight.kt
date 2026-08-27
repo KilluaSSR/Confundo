@@ -25,7 +25,10 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
+import killua.dev.confundo.ui.theme.ConfundoTheme
+import killua.dev.confundo.ui.theme.ShapeRadius
+import killua.dev.confundo.ui.theme.Spacing
 
 enum class HighlightType {
     INFO,
@@ -64,10 +67,12 @@ fun Highlight(
             containerColor = backgroundColor,
             contentColor = textColor,
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = Spacing.none),
+        shape = RoundedCornerShape(ShapeRadius.Large),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -77,9 +82,9 @@ fun Highlight(
                     imageVector = icon,
                     contentDescription = null,
                     tint = textColor,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(Spacing.lgIncreased)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(Spacing.sm))
                 Text(
                     text = title,
                     color = textColor,
@@ -99,10 +104,10 @@ fun Highlight(
 @Preview(showBackground = true, name = "Light Mode")
 @Composable
 fun HighlightPreview() {
-    MaterialTheme {
+    ConfundoTheme(dynamicColor = false) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier.padding(Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.lg)
         ) {
             Highlight(
                 warningType = HighlightType.INFO,

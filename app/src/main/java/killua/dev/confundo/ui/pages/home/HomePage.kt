@@ -7,6 +7,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,10 +22,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
@@ -69,6 +76,7 @@ import androidx.compose.material3.SearchBarState
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ToggleFloatingActionButton
@@ -93,7 +101,6 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -107,7 +114,9 @@ import killua.dev.confundo.ui.components.AppPosition
 import killua.dev.confundo.ui.components.ExpressiveRefreshIndicator
 import killua.dev.confundo.ui.components.ObserveSnackbarEffects
 import killua.dev.confundo.ui.components.PageLoadingIndicator
+import killua.dev.confundo.ui.components.animatedGroupedShape
 import killua.dev.confundo.ui.theme.Dimens
+import killua.dev.confundo.ui.theme.ShapeRadius
 import killua.dev.confundo.utils.LocalNavController
 import kotlinx.coroutines.launch
 
@@ -122,7 +131,6 @@ fun HomePage(viewModel: HomeViewModel = hiltViewModel()) {
     val snackbarHostState = remember { SnackbarHostState() }
     ObserveSnackbarEffects(viewModel.effects, snackbarHostState)
 
-    // 多选状态使用 rememberSaveable，配置变更（旋转/进程重建）后不丢失。
     val selectedPkgs = rememberSaveable(
         saver = listSaver(
             save = { it.toList() },
@@ -138,16 +146,13 @@ fun HomePage(viewModel: HomeViewModel = hiltViewModel()) {
 
     var showMenu by remember { mutableStateOf(false) }
 
-    // Material Expressive 搜索：SearchBarState 驱动展开/折叠动画，TextFieldState 承载输入。
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
-    // 输入变化下推到 ViewModel 参与筛选（在非主线程完成排序/过滤）。
     LaunchedEffect(textFieldState) {
         snapshotFlow { textFieldState.text.toString() }
             .collect { viewModel.emitIntentOnIO(HomeIntent.SetSearchQuery(it)) }
     }
 
-    // 可见列表已在 ViewModel 的非主线程算好并回填，这里直接读取，避免切页时在主线程重复筛选/排序。
     val visibleApps = state.visibleApps
 
     val scope = rememberCoroutineScope()
@@ -156,18 +161,21 @@ fun HomePage(viewModel: HomeViewModel = hiltViewModel()) {
     var showTemplatePicker by remember { mutableStateOf(false) }
     var templatePickerItems by remember { mutableStateOf<List<TemplateItem>>(emptyList()) }
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
-                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
                 actions = {
                     Box {
-                        IconButton(onClick = { showMenu = true }) {
+                        IconButton(
+                            onClick = { showMenu = true },
+                            shapes = IconButtonDefaults.shapes(),
+                        ) {
                             Icon(
                                 Icons.Default.MoreVert,
                                 contentDescription = stringResource(R.string.cd_more_options)
@@ -200,17 +208,59 @@ fun HomePage(viewModel: HomeViewModel = hiltViewModel()) {
             Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                )
         ) {
             when (state.phase) {
                 HomePhase.Loading -> PageLoadingIndicator()
                 HomePhase.Ready -> {
-                    Box(Modifier.fillMaxSize()) {
+                    Column(Modifier.fillMaxSize()) {
+                        HomeSearchBar(
+                            textFieldState = textFieldState,
+                            searchBarState = searchBarState,
+                            results = visibleApps,
+                            icons = state.icons,
+                            onResultClick = { pkg ->
+                                navController.navigate(Routes.appDetail(pkg))
+                            },
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .widthIn(max = Dimens.ContentMaxWidth)
+                                .fillMaxWidth()
+                                .windowInsetsPadding(
+                                    WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                                )
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+
+                        FilterSortRow(
+                            statusFilter = state.statusFilter,
+                            sortOrder = state.sortOrder,
+                            onStatusFilter = {
+                                viewModel.emitIntentOnIO(HomeIntent.SetStatusFilter(it))
+                            },
+                            onSortOrder = {
+                                viewModel.emitIntentOnIO(HomeIntent.SetSortOrder(it))
+                            },
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .widthIn(max = Dimens.ContentMaxWidth)
+                                .fillMaxWidth()
+                                .windowInsetsPadding(
+                                    WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                                )
+                                .padding(horizontal = 16.dp),
+                        )
+
                         val pullState = rememberPullToRefreshState()
                         PullToRefreshBox(
                             isRefreshing = state.isRefreshing,
                             onRefresh = { viewModel.emitIntentOnIO(HomeIntent.Refresh) },
                             state = pullState,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
                             indicator = {
                                 ExpressiveRefreshIndicator(
                                     isRefreshing = state.isRefreshing,
@@ -222,27 +272,16 @@ fun HomePage(viewModel: HomeViewModel = hiltViewModel()) {
                             LazyColumn(
                                 modifier = Modifier
                                     .fillMaxHeight()
-                                    // 大屏约束可读宽度并居中，避免超宽行。
                                     .widthIn(max = Dimens.ContentMaxWidth)
                                     .fillMaxWidth()
                                     .align(Alignment.TopCenter)
-                                    .padding(horizontal = 16.dp),
-                                // 顶部留白让出悬浮搜索框的高度。
-                                contentPadding = PaddingValues(top = 80.dp, bottom = 96.dp)
-                            ) {
-                                item(key = "__filter_sort__") {
-                                    FilterSortRow(
-                                        statusFilter = state.statusFilter,
-                                        sortOrder = state.sortOrder,
-                                        onStatusFilter = {
-                                            viewModel.emitIntentOnIO(HomeIntent.SetStatusFilter(it))
-                                        },
-                                        onSortOrder = {
-                                            viewModel.emitIntentOnIO(HomeIntent.SetSortOrder(it))
-                                        },
-                                        modifier = Modifier.animateItem(),
+                                    .windowInsetsPadding(
+                                        WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
                                     )
-                                }
+                                    .padding(horizontal = 16.dp),
+                                contentPadding = PaddingValues(top = 4.dp, bottom = 96.dp),
+                                verticalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
                                 if (visibleApps.isEmpty()) {
                                     item(key = "__empty__") {
                                         EmptyResult(modifier = Modifier.animateItem())
@@ -293,29 +332,28 @@ fun HomePage(viewModel: HomeViewModel = hiltViewModel()) {
                                 }
                             }
                         }
-
-                        HomeSearchBar(
-                            textFieldState = textFieldState,
-                            searchBarState = searchBarState,
-                            results = visibleApps,
-                            icons = state.icons,
-                            onResultClick = { pkg ->
-                                navController.navigate(Routes.appDetail(pkg))
-                            },
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .widthIn(max = Dimens.ContentMaxWidth)
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                        )
                     }
                 }
             }
 
             androidx.compose.animation.AnimatedVisibility(
                 visible = showToolbar,
-                enter = slideInVertically { it } + fadeIn(),
-                exit = slideOutVertically { it } + fadeOut(),
+                enter = slideInVertically(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow,
+                    )
+                ) { it } + fadeIn(
+                    spring(stiffness = Spring.StiffnessMedium)
+                ),
+                exit = slideOutVertically(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMedium,
+                    )
+                ) { it } + fadeOut(
+                    spring(stiffness = Spring.StiffnessMedium)
+                ),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
@@ -406,15 +444,21 @@ fun HomePage(viewModel: HomeViewModel = hiltViewModel()) {
             title = { Text(stringResource(R.string.dialog_apply_all_title)) },
             text = { Text(stringResource(R.string.dialog_apply_all_message)) },
             confirmButton = {
-                TextButton(onClick = {
-                    showApplyAllDialog = false
-                    viewModel.emitIntentOnIO(HomeIntent.ApplyToAll)
-                }) {
+                TextButton(
+                    onClick = {
+                        showApplyAllDialog = false
+                        viewModel.emitIntentOnIO(HomeIntent.ApplyToAll)
+                    },
+                    shapes = ButtonDefaults.shapes(),
+                ) {
                     Text(stringResource(R.string.dialog_confirm))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showApplyAllDialog = false }) {
+                TextButton(
+                    onClick = { showApplyAllDialog = false },
+                    shapes = ButtonDefaults.shapes(),
+                ) {
                     Text(stringResource(R.string.dialog_cancel))
                 }
             }
@@ -426,24 +470,50 @@ fun HomePage(viewModel: HomeViewModel = hiltViewModel()) {
         ModalBottomSheet(
             onDismissRequest = { showTemplatePicker = false },
             sheetState = sheetState,
+            shape = RoundedCornerShape(
+                topStart = ShapeRadius.ExtraLarge,
+                topEnd = ShapeRadius.ExtraLarge,
+            ),
+            scrimColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
         ) {
             Text(
                 text = stringResource(R.string.template_apply_dialog_title),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
             )
-            templatePickerItems.forEach { template ->
-                ListItem(
-                    headlineContent = { Text(template.name) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            showTemplatePicker = false
-                            val pkgs = selectedPkgs.toList()
-                            selectedPkgs.clear()
-                            viewModel.emitIntentOnIO(HomeIntent.ApplyTemplate(pkgs, template.id))
-                        },
-                )
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                templatePickerItems.forEachIndexed { index, template ->
+                    val position = when {
+                        templatePickerItems.size == 1 -> AppPosition.Single
+                        index == 0 -> AppPosition.Top
+                        index == templatePickerItems.lastIndex -> AppPosition.Bottom
+                        else -> AppPosition.Middle
+                    }
+                    Surface(
+                        shape = animatedGroupedShape(position, false, Dimens.ListCorner),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    ) {
+                        ListItem(
+                            headlineContent = { Text(template.name) },
+                            colors = androidx.compose.material3.ListItemDefaults.colors(
+                                containerColor = androidx.compose.ui.graphics.Color.Transparent
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showTemplatePicker = false
+                                    val pkgs = selectedPkgs.toList()
+                                    selectedPkgs.clear()
+                                    viewModel.emitIntentOnIO(
+                                        HomeIntent.ApplyTemplate(pkgs, template.id)
+                                    )
+                                },
+                        )
+                    }
+                }
             }
             Box(modifier = Modifier.navigationBarsPadding())
         }
@@ -462,7 +532,6 @@ private fun HomeSearchBar(
 ) {
     val scope = rememberCoroutineScope()
 
-    // 折叠态与全屏展开态共用同一个 InputField（Material3 稳定的 slot 化 Search API）。
     val inputField = @Composable {
         SearchBarDefaults.InputField(
             textFieldState = textFieldState,
@@ -477,7 +546,10 @@ private fun HomeSearchBar(
             },
             trailingIcon = {
                 if (textFieldState.text.isNotEmpty()) {
-                    IconButton(onClick = { textFieldState.clearText() }) {
+                    IconButton(
+                        onClick = { textFieldState.clearText() },
+                        shapes = IconButtonDefaults.shapes(),
+                    ) {
                         Icon(
                             Icons.Filled.Clear,
                             contentDescription = stringResource(R.string.cd_search_clear),
@@ -529,31 +601,50 @@ private fun SearchResults(
             )
         }
     } else {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(results, key = { it.packageName }) { app ->
-                ListItem(
-                    headlineContent = { Text(app.appName) },
-                    supportingContent = {
-                        Text(
-                            app.packageName,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    leadingContent = {
-                        val bitmap = icons[app.packageName]
-                        if (bitmap != null) {
-                            Image(
-                                bitmap = bitmap,
-                                contentDescription = null,
-                                modifier = Modifier.size(40.dp),
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            itemsIndexed(results, key = { _, app -> app.packageName }) { index, app ->
+                val position = when {
+                    results.size == 1 -> AppPosition.Single
+                    index == 0 -> AppPosition.Top
+                    index == results.lastIndex -> AppPosition.Bottom
+                    else -> AppPosition.Middle
+                }
+                Surface(
+                    shape = animatedGroupedShape(position, false, Dimens.ListCorner),
+                    color = MaterialTheme.colorScheme.surfaceBright,
+                ) {
+                    ListItem(
+                        headlineContent = { Text(app.appName) },
+                        supportingContent = {
+                            Text(
+                                app.packageName,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
-                        } else {
-                            Icon(Icons.Rounded.Android, contentDescription = null)
-                        }
-                    },
-                    modifier = Modifier.clickable { onResultClick(app.packageName) },
-                )
+                        },
+                        leadingContent = {
+                            val bitmap = icons[app.packageName]
+                            if (bitmap != null) {
+                                Image(
+                                    bitmap = bitmap,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(40.dp),
+                                )
+                            } else {
+                                Icon(Icons.Rounded.Android, contentDescription = null)
+                            }
+                        },
+                        colors = androidx.compose.material3.ListItemDefaults.colors(
+                            containerColor = androidx.compose.ui.graphics.Color.Transparent
+                        ),
+                        modifier = Modifier.clickable { onResultClick(app.packageName) },
+                    )
+                }
             }
         }
     }
@@ -673,6 +764,7 @@ private fun SelectionToolbar(
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     FilledIconButton(
                         onClick = onDeselectAll,
+                        shapes = IconButtonDefaults.shapes(),
                         colors = IconButtonDefaults.filledIconButtonColors(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                         )
@@ -681,6 +773,7 @@ private fun SelectionToolbar(
                     }
                     FilledIconButton(
                         onClick = onSelectAll,
+                        shapes = IconButtonDefaults.shapes(),
                         colors = IconButtonDefaults.filledIconButtonColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
                         )
@@ -689,6 +782,7 @@ private fun SelectionToolbar(
                     }
                     FilledIconButton(
                         onClick = onEnableAll,
+                        shapes = IconButtonDefaults.shapes(),
                         colors = IconButtonDefaults.filledIconButtonColors(
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         )
@@ -697,6 +791,7 @@ private fun SelectionToolbar(
                     }
                     FilledIconButton(
                         onClick = onDisableAll,
+                        shapes = IconButtonDefaults.shapes(),
                         colors = IconButtonDefaults.filledIconButtonColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer,
                         )
@@ -708,6 +803,7 @@ private fun SelectionToolbar(
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     FilledTonalButton(
                         onClick = onResetOn,
+                        shapes = ButtonDefaults.shapes(),
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         )
@@ -716,6 +812,7 @@ private fun SelectionToolbar(
                     }
                     FilledTonalButton(
                         onClick = onResetOff,
+                        shapes = ButtonDefaults.shapes(),
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         )
@@ -724,6 +821,7 @@ private fun SelectionToolbar(
                     }
                     FilledTonalButton(
                         onClick = onApplyTemplate,
+                        shapes = ButtonDefaults.shapes(),
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
                         )

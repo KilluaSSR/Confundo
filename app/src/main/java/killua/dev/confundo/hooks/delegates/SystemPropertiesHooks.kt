@@ -2,13 +2,16 @@ package killua.dev.confundo.hooks.delegates
 
 import com.highcapable.yukihookapi.hook.param.PackageParam
 import killua.dev.confundo.data.SystemPropKey
+import killua.dev.confundo.hooks.BuildProps
 import killua.dev.confundo.hooks.HookDelegate
-import killua.dev.confundo.ui.pages.home.FieldKeys
 
 object SystemPropertiesHooks : HookDelegate {
 
     override fun PackageParam.apply(fields: Map<String, String>) {
         val sysProp = "android.os.SystemProperties".toClassOrNull() ?: return
+
+        val propOverrides = BuildProps.propMap(fields)
+        val resolve: (String?) -> String? = { key -> resolveProp(key, propOverrides, fields) }
 
         sysProp.hook {
             listOf(1, 2).forEach { count ->
@@ -16,7 +19,7 @@ object SystemPropertiesHooks : HookDelegate {
                     injectMember {
                         method { name = "get"; paramCount = count }
                         afterHook {
-                            resolveProp(args().first().string(), fields)?.let { result = it }
+                            resolve(args().first().string())?.let { result = it }
                         }
                     }
                 } catch (_: NoSuchMethodError) {}
@@ -26,7 +29,7 @@ object SystemPropertiesHooks : HookDelegate {
                 injectMember {
                     method { name = "getInt"; paramCount = 2 }
                     afterHook {
-                        resolveProp(args().first().string(), fields)?.toIntOrNull()?.let { result = it }
+                        resolve(args().first().string())?.toIntOrNull()?.let { result = it }
                     }
                 }
             } catch (_: NoSuchMethodError) {}
@@ -35,7 +38,7 @@ object SystemPropertiesHooks : HookDelegate {
                 injectMember {
                     method { name = "getLong"; paramCount = 2 }
                     afterHook {
-                        resolveProp(args().first().string(), fields)?.toLongOrNull()?.let { result = it }
+                        resolve(args().first().string())?.toLongOrNull()?.let { result = it }
                     }
                 }
             } catch (_: NoSuchMethodError) {}
@@ -44,7 +47,7 @@ object SystemPropertiesHooks : HookDelegate {
                 injectMember {
                     method { name = "getBoolean"; paramCount = 2 }
                     afterHook {
-                        resolveProp(args().first().string(), fields)?.let { v ->
+                        resolve(args().first().string())?.let { v ->
                             result = v == "1" || v.equals("true", ignoreCase = true)
                         }
                     }
@@ -53,17 +56,15 @@ object SystemPropertiesHooks : HookDelegate {
         }
     }
 
-    private fun resolveProp(key: String?, fields: Map<String, String>): String? {
+    private fun resolveProp(
+        key: String?,
+        propOverrides: Map<String, String>,
+        fields: Map<String, String>,
+    ): String? {
         if (key == null) return null
+        propOverrides[key]?.let { return it }
+
         val fieldKey = SystemPropKey.fieldKeyFor(key) ?: return null
-        val raw = fields[fieldKey]?.trim()?.takeIf { it.isNotEmpty() } ?: return null
-
-        if (fieldKey == FieldKeys.SDK_INT) {
-            val realSdk = android.os.Build.VERSION.SDK_INT
-            val effectiveSdk = raw.toIntOrNull()?.coerceAtLeast(realSdk) ?: return null
-            return effectiveSdk.toString()
-        }
-
-        return raw
+        return fields[fieldKey]?.trim()?.takeIf { it.isNotEmpty() }
     }
 }

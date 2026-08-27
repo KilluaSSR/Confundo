@@ -12,6 +12,7 @@ import killua.dev.confundo.hooks.delegates.GoogleHooks
 import killua.dev.confundo.hooks.delegates.HardwareHooks
 import killua.dev.confundo.hooks.delegates.LocaleHooks
 import killua.dev.confundo.hooks.delegates.MediaDrmHooks
+import killua.dev.confundo.hooks.delegates.NativeHooks
 import killua.dev.confundo.hooks.delegates.NetworkHooks
 import killua.dev.confundo.hooks.delegates.OpenGLHooks
 import killua.dev.confundo.hooks.delegates.SensorHooks
@@ -40,7 +41,15 @@ object HookEntry : IYukiHookXposedInit {
             // 全空则整体放行真实值。
             if (normalizedFields.values.all { it.isEmpty() }) return@loadApp
 
-            delegates.forEach { delegate ->
+            // Native Hook 总开关
+            val nativeEnabled = runCatching {
+                prefs(FieldKeys.GLOBAL_PREFS).getBoolean(FieldKeys.NATIVE_HOOK_ENABLED, false)
+            }.getOrDefault(false)
+
+            val activeDelegates =
+                if (nativeEnabled) delegates else delegates.filterNot { it === NativeHooks }
+
+            activeDelegates.forEach { delegate ->
                 runCatching {
                     with(delegate) { apply(normalizedFields) }
                 }.onFailure { YLog.error("Delegate ${delegate.javaClass.simpleName} failed", it) }
@@ -64,6 +73,7 @@ object HookEntry : IYukiHookXposedInit {
     }
 
     private val delegates = listOf(
+        NativeHooks,
         BuildHooks,
         SystemPropertiesHooks,
         SystemHooks,

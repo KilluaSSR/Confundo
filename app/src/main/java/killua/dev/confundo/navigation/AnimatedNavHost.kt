@@ -3,7 +3,8 @@ package killua.dev.confundo.navigation
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -25,16 +26,40 @@ fun AnimatedNavHost(
     modifier: Modifier = Modifier,
     route: String? = null,
     enterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition) = {
-        slideInHorizontally(initialOffsetX = { fullWidth -> fullWidth })
+        slideInHorizontally(
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+            initialOffsetX = { fullWidth -> fullWidth },
+        )
     },
     exitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition) = {
-        slideOutHorizontally(targetOffsetX = { fullWidth -> -fullWidth })
+        slideOutHorizontally(
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+            targetOffsetX = { fullWidth -> -fullWidth },
+        )
     },
     popEnterTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition) = {
-        slideInHorizontally(initialOffsetX = { fullWidth -> -fullWidth })
+        slideInHorizontally(
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+            initialOffsetX = { fullWidth -> -fullWidth },
+        )
     },
     popExitTransition: (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition) = {
-        slideOutHorizontally(targetOffsetX = { fullWidth -> fullWidth })
+        slideOutHorizontally(
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
+            targetOffsetX = { fullWidth -> fullWidth },
+        )
     },
     builder: NavGraphBuilder.() -> Unit
 ) {
@@ -51,18 +76,21 @@ fun AnimatedNavHost(
     )
 }
 
-private const val FadeDuration = 250
 
-/**
- * Material Motion「Fade Through」：用于同级 Tab 之间切换，语义上不表达前进/后退。
- *
- * 仅用淡入，不做整页 scaleIn——避免在进入页首帧仍在首次组合/懒加载时对整棵子树做缩放变换，
- * 从而减少切页时的掉帧。
- */
 val TabEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-    fadeIn(animationSpec = tween(FadeDuration))
+    fadeIn(
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMedium,
+        )
+    )
 }
 
 val TabExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-    fadeOut(animationSpec = tween(FadeDuration))
+    fadeOut(
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMedium,
+        )
+    )
 }

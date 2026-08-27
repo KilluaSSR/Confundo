@@ -16,8 +16,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import killua.dev.confundo.ui.theme.Dimens
+import killua.dev.confundo.ui.theme.Spacing
 
 @Composable
 fun TemplateListRow(
@@ -28,18 +28,18 @@ fun TemplateListRow(
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {},
 ) {
-    val containerColor = if (selected) {
-        MaterialTheme.colorScheme.secondaryContainer
-    } else {
-        MaterialTheme.colorScheme.surfaceContainerHigh
-    }
-
-    val shape = groupedShape(position, cornerRadius)
+    val containerColor = animatedGroupedColor(selected)
+    val shape = animatedGroupedShape(position, selected, cornerRadius)
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = shape,
         color = containerColor,
+        contentColor = if (selected) {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
     ) {
         Row(
             modifier = Modifier
@@ -50,14 +50,13 @@ fun TemplateListRow(
                     onClick = onClick,
                     onLongClick = onLongClick,
                 )
-                .padding(horizontal = 20.dp, vertical = 20.dp)
+                .padding(horizontal = Spacing.lgIncreased, vertical = Spacing.lgIncreased)
                 .semantics { role = Role.Button },
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = name,
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

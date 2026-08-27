@@ -10,12 +10,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -38,7 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -54,11 +64,12 @@ import killua.dev.confundo.ui.components.SectionHeader
 import killua.dev.confundo.ui.theme.ConfundoTheme
 import killua.dev.confundo.ui.theme.Dimens
 import killua.dev.confundo.ui.theme.Spacing
+import killua.dev.confundo.ui.theme.ShapeRadius
 import java.text.SimpleDateFormat
 import java.util.Date
 import androidx.compose.ui.platform.LocalLocale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SettingsPage(viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -71,21 +82,22 @@ fun SettingsPage(viewModel: SettingsViewModel = hiltViewModel()) {
     SettingsPageContent(state, snackbarHostState, onIntent = viewModel::emitIntentOnIO)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SettingsPageContent(
     state: SettingsUiState,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onIntent: (SettingsIntent) -> Unit = {},
 ) {
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.nav_settings)) },
-                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
             )
         }
     ) { padding ->
@@ -100,12 +112,16 @@ fun SettingsPageContent(
                     .verticalScroll(rememberScrollState())
                     .widthIn(max = Dimens.ContentMaxWidth)
                     .fillMaxWidth()
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                    )
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(Spacing.md),
             ) {
                 RefreshSection(state, onIntent)
                 TimeFieldsSection(state, onIntent)
-                BackupSection(onIntent)
+                NativeHookSection(state, onIntent)
+                BackupSection(state.backupInProgress, onIntent)
                 AppearanceSection(state, onIntent)
                 Spacer(Modifier.height(Spacing.lg))
             }
@@ -114,55 +130,73 @@ fun SettingsPageContent(
 }
 
 private enum class ClearTarget { ACTIVATION, BOOT }
+private enum class SettingsItemPosition { Single, Top, Middle, Bottom }
+
+private fun settingsItemShape(position: SettingsItemPosition): Shape = when (position) {
+    SettingsItemPosition.Single -> RoundedCornerShape(ShapeRadius.Large)
+    SettingsItemPosition.Top -> RoundedCornerShape(
+        topStart = ShapeRadius.Large,
+        topEnd = ShapeRadius.Large,
+        bottomStart = ShapeRadius.ExtraSmall,
+        bottomEnd = ShapeRadius.ExtraSmall,
+    )
+    SettingsItemPosition.Middle -> RoundedCornerShape(ShapeRadius.ExtraSmall)
+    SettingsItemPosition.Bottom -> RoundedCornerShape(
+        topStart = ShapeRadius.ExtraSmall,
+        topEnd = ShapeRadius.ExtraSmall,
+        bottomStart = ShapeRadius.Large,
+        bottomEnd = ShapeRadius.Large,
+    )
+}
 
 @Composable
 private fun TimeFieldsSection(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
     var pendingClear by remember { mutableStateOf<ClearTarget?>(null) }
 
-    Surface(
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Column {
-            SectionHeader(title = stringResource(R.string.settings_time_title))
-
+    Column {
+        SectionHeader(title = stringResource(R.string.settings_time_title))
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
             CardSwitch(
                 text = stringResource(R.string.settings_time_randomize_activation),
                 checked = state.randomizeActivationTime,
                 onCheckedChange = { onIntent(SettingsIntent.SetRandomizeActivationTime(it)) },
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                containerColor = MaterialTheme.colorScheme.surfaceBright,
+                shape = settingsItemShape(SettingsItemPosition.Top),
             )
             CardSwitch(
                 text = stringResource(R.string.settings_time_randomize_boot),
                 checked = state.randomizeBootTime,
                 onCheckedChange = { onIntent(SettingsIntent.SetRandomizeBootTime(it)) },
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                containerColor = MaterialTheme.colorScheme.surfaceBright,
+                shape = settingsItemShape(SettingsItemPosition.Middle),
             )
-            Text(
-                text = stringResource(R.string.settings_time_summary),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
-            )
-
-            Column(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            Surface(
+                shape = settingsItemShape(SettingsItemPosition.Bottom),
+                color = MaterialTheme.colorScheme.surfaceBright,
             ) {
-                OutlinedButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { pendingClear = ClearTarget.ACTIVATION },
-                ) {
-                    Text(stringResource(R.string.settings_time_clear_activation))
-                }
-                OutlinedButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { pendingClear = ClearTarget.BOOT },
-                ) {
-                    Text(stringResource(R.string.settings_time_clear_boot))
+                Column(modifier = Modifier.padding(Spacing.lg)) {
+                    Text(
+                        text = stringResource(R.string.settings_time_summary),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(Spacing.sm))
+                    OutlinedButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { pendingClear = ClearTarget.ACTIVATION },
+                        shapes = ButtonDefaults.shapes(),
+                    ) {
+                        Text(stringResource(R.string.settings_time_clear_activation))
+                    }
+                    OutlinedButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { pendingClear = ClearTarget.BOOT },
+                        shapes = ButtonDefaults.shapes(),
+                    ) {
+                        Text(stringResource(R.string.settings_time_clear_boot))
+                    }
                 }
             }
-            Spacer(Modifier.height(8.dp))
         }
     }
 
@@ -178,15 +212,24 @@ private fun TimeFieldsSection(state: SettingsUiState, onIntent: (SettingsIntent)
             title = { Text(stringResource(R.string.settings_time_clear_dialog_title)) },
             text = { Text(stringResource(bodyRes)) },
             confirmButton = {
-                TextButton(onClick = {
-                    onIntent(intent)
-                    pendingClear = null
-                }) {
+                TextButton(
+                    onClick = {
+                        onIntent(intent)
+                        pendingClear = null
+                    },
+                    shapes = ButtonDefaults.shapes(),
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) {
                     Text(stringResource(R.string.dialog_confirm))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingClear = null }) {
+                TextButton(
+                    onClick = { pendingClear = null },
+                    shapes = ButtonDefaults.shapes(),
+                ) {
                     Text(stringResource(R.string.dialog_cancel))
                 }
             },
@@ -195,7 +238,38 @@ private fun TimeFieldsSection(state: SettingsUiState, onIntent: (SettingsIntent)
 }
 
 @Composable
-private fun BackupSection(onIntent: (SettingsIntent) -> Unit) {
+private fun NativeHookSection(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
+    Column {
+        SectionHeader(title = stringResource(R.string.settings_native_title))
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
+            CardSwitch(
+                text = stringResource(R.string.settings_native_hook_title),
+                checked = state.nativeHookEnabled,
+                onCheckedChange = { onIntent(SettingsIntent.SetNativeHook(it)) },
+                containerColor = MaterialTheme.colorScheme.surfaceBright,
+                shape = settingsItemShape(SettingsItemPosition.Top),
+            )
+            Surface(
+                shape = settingsItemShape(SettingsItemPosition.Bottom),
+                color = MaterialTheme.colorScheme.surfaceBright,
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_native_hook_summary),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(Spacing.lg),
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun BackupSection(
+    inProgress: Boolean,
+    onIntent: (SettingsIntent) -> Unit,
+) {
     var pendingImportUri by remember { mutableStateOf<android.net.Uri?>(null) }
 
     val exportLauncher = rememberLauncherForActivityResult(
@@ -206,42 +280,50 @@ private fun BackupSection(onIntent: (SettingsIntent) -> Unit) {
         contract = ActivityResultContracts.OpenDocument(),
     ) { uri -> pendingImportUri = uri }
 
-    Surface(
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Column {
-            SectionHeader(title = stringResource(R.string.settings_backup_title))
+    Column {
+        SectionHeader(title = stringResource(R.string.settings_backup_title))
+        Surface(
+            shape = settingsItemShape(SettingsItemPosition.Single),
+            color = MaterialTheme.colorScheme.surfaceBright,
+        ) {
+            Column(modifier = Modifier.padding(Spacing.lg)) {
+                Text(
+                    text = stringResource(R.string.settings_backup_summary),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
 
-            Text(
-                text = stringResource(R.string.settings_backup_summary),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
-            )
-
-            Column(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-            ) {
-                OutlinedButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US)
-                            .format(Date())
-                        exportLauncher.launch("Confundo_backup_$timestamp.json")
-                    },
+                Column(
+                    modifier = Modifier.padding(top = Spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
-                    Text(stringResource(R.string.settings_backup_export))
-                }
-                OutlinedButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { importLauncher.launch(arrayOf("application/json", "*/*")) },
-                ) {
-                    Text(stringResource(R.string.settings_backup_import))
+                    FilledTonalButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !inProgress,
+                        shapes = ButtonDefaults.shapes(),
+                        onClick = {
+                            val timestamp =
+                                SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US)
+                                    .format(Date())
+                            exportLauncher.launch("Confundo_backup_$timestamp.json")
+                        },
+                    ) {
+                        if (inProgress) {
+                            LoadingIndicator(modifier = Modifier.size(Spacing.xl))
+                        } else {
+                            Text(stringResource(R.string.settings_backup_export))
+                        }
+                    }
+                    OutlinedButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !inProgress,
+                        shapes = ButtonDefaults.shapes(),
+                        onClick = { importLauncher.launch(arrayOf("application/json", "*/*")) },
+                    ) {
+                        Text(stringResource(R.string.settings_backup_import))
+                    }
                 }
             }
-            Spacer(Modifier.height(8.dp))
         }
     }
 
@@ -251,15 +333,24 @@ private fun BackupSection(onIntent: (SettingsIntent) -> Unit) {
             title = { Text(stringResource(R.string.settings_backup_import_confirm_title)) },
             text = { Text(stringResource(R.string.settings_backup_import_confirm_message)) },
             confirmButton = {
-                TextButton(onClick = {
-                    onIntent(SettingsIntent.ImportBackup(uri))
-                    pendingImportUri = null
-                }) {
+                TextButton(
+                    onClick = {
+                        onIntent(SettingsIntent.ImportBackup(uri))
+                        pendingImportUri = null
+                    },
+                    shapes = ButtonDefaults.shapes(),
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) {
                     Text(stringResource(R.string.dialog_confirm))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingImportUri = null }) {
+                TextButton(
+                    onClick = { pendingImportUri = null },
+                    shapes = ButtonDefaults.shapes(),
+                ) {
                     Text(stringResource(R.string.dialog_cancel))
                 }
             },
@@ -269,28 +360,30 @@ private fun BackupSection(onIntent: (SettingsIntent) -> Unit) {
 
 @Composable
 private fun RefreshSection(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
-    Surface(
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xl)) {
-            CardSwitch(
-                text = stringResource(R.string.settings_auto_refresh_title),
-                checked = state.autoRefreshEnabled,
-                onCheckedChange = { onIntent(SettingsIntent.SetAutoRefresh(it)) },
-            )
-            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
+        CardSwitch(
+            text = stringResource(R.string.settings_auto_refresh_title),
+            checked = state.autoRefreshEnabled,
+            onCheckedChange = { onIntent(SettingsIntent.SetAutoRefresh(it)) },
+            containerColor = MaterialTheme.colorScheme.surfaceBright,
+            shape = settingsItemShape(SettingsItemPosition.Top),
+        )
+        Surface(
+            shape = settingsItemShape(SettingsItemPosition.Bottom),
+            color = MaterialTheme.colorScheme.surfaceBright,
+        ) {
+            Column(modifier = Modifier.padding(Spacing.lg)) {
                 Text(
                     text = stringResource(R.string.settings_interval_title),
                     style = MaterialTheme.typography.titleMedium,
                 )
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(Spacing.xxs))
                 Text(
                     text = stringResource(R.string.settings_interval_days, state.intervalDays),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(Spacing.xs))
                 Slider(
                     value = state.intervalDays.toFloat(),
                     onValueChange = { onIntent(SettingsIntent.SetInterval(it.toInt())) },
@@ -316,8 +409,9 @@ private fun RefreshSection(state: SettingsUiState, onIntent: (SettingsIntent) ->
                 FilledTonalButton(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp),
-                    onClick = { onIntent(SettingsIntent.RunNow) }
+                        .padding(top = Spacing.md),
+                    onClick = { onIntent(SettingsIntent.RunNow) },
+                    shapes = ButtonDefaults.shapes(),
                 ) {
                     Text(stringResource(R.string.settings_run_now))
                 }
@@ -329,51 +423,57 @@ private fun RefreshSection(state: SettingsUiState, onIntent: (SettingsIntent) ->
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AppearanceSection(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
-    Surface(
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
-        Column {
-            SectionHeader(title = stringResource(R.string.settings_appearance_title))
-
-            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                Text(
-                    text = stringResource(R.string.settings_dark_mode_title),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Spacer(Modifier.height(8.dp))
-                val options = listOf(
-                    AppSettings.DARK_MODE_SYSTEM to R.string.settings_dark_mode_system,
-                    AppSettings.DARK_MODE_LIGHT to R.string.settings_dark_mode_light,
-                    AppSettings.DARK_MODE_DARK to R.string.settings_dark_mode_dark,
-                )
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    options.forEachIndexed { index, (mode, labelRes) ->
-                        SegmentedButton(
-                            selected = state.darkMode == mode,
-                            onClick = { onIntent(SettingsIntent.SetDarkMode(mode)) },
-                            shape = SegmentedButtonDefaults.itemShape(index, options.size),
-                        ) {
-                            Text(stringResource(labelRes))
+    Column {
+        SectionHeader(title = stringResource(R.string.settings_appearance_title))
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
+            Surface(
+                shape = settingsItemShape(SettingsItemPosition.Top),
+                color = MaterialTheme.colorScheme.surfaceBright,
+            ) {
+                Column(modifier = Modifier.padding(Spacing.lg)) {
+                    Text(
+                        text = stringResource(R.string.settings_dark_mode_title),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Spacer(Modifier.height(Spacing.sm))
+                    val options = listOf(
+                        AppSettings.DARK_MODE_SYSTEM to R.string.settings_dark_mode_system,
+                        AppSettings.DARK_MODE_LIGHT to R.string.settings_dark_mode_light,
+                        AppSettings.DARK_MODE_DARK to R.string.settings_dark_mode_dark,
+                    )
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        options.forEachIndexed { index, (mode, labelRes) ->
+                            SegmentedButton(
+                                selected = state.darkMode == mode,
+                                onClick = { onIntent(SettingsIntent.SetDarkMode(mode)) },
+                                shape = SegmentedButtonDefaults.itemShape(index, options.size),
+                            ) {
+                                Text(stringResource(labelRes))
+                            }
                         }
                     }
+                    Spacer(Modifier.height(Spacing.sm))
                 }
-                Spacer(Modifier.height(8.dp))
             }
 
             CardSwitch(
                 text = stringResource(R.string.settings_dynamic_color_title),
                 checked = state.dynamicColor,
                 onCheckedChange = { onIntent(SettingsIntent.SetDynamicColor(it)) },
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                containerColor = MaterialTheme.colorScheme.surfaceBright,
+                shape = settingsItemShape(SettingsItemPosition.Middle),
             )
-            Text(
-                text = stringResource(R.string.settings_dynamic_color_summary),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
-            )
-            Spacer(Modifier.height(8.dp))
+            Surface(
+                shape = settingsItemShape(SettingsItemPosition.Bottom),
+                color = MaterialTheme.colorScheme.surfaceBright,
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_dynamic_color_summary),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(Spacing.lg),
+                )
+            }
         }
     }
 }

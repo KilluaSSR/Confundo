@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package killua.dev.confundo.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -5,13 +7,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -32,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import killua.dev.confundo.R
 import killua.dev.confundo.data.FieldInputType
 import killua.dev.confundo.data.FieldSpec
+import killua.dev.confundo.ui.theme.ShapeRadius
 
 /**
  * 根据 [FieldSpec.inputType] 渲染对应输入控件的对话框：
@@ -40,7 +46,7 @@ import killua.dev.confundo.data.FieldSpec
  * - [FieldInputType.Boolean]：开关。
  * - [FieldInputType.Text]：文本。
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FieldInputDialog(
     spec: FieldSpec?,
@@ -129,7 +135,10 @@ private fun NumberDialog(
             )
             if (type.units.isNotEmpty()) {
                 Box {
-                    OutlinedButton(onClick = { unitMenu = true }) {
+                    OutlinedButton(
+                        onClick = { unitMenu = true },
+                        shapes = ButtonDefaults.shapes(),
+                    ) {
                         Text(unit.ifEmpty { stringResource(R.string.input_select_unit) })
                         Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
                     }
@@ -160,7 +169,11 @@ private fun EnumDialog(
 
     BaseDialog(title, onDismiss, { onConfirm(selected) }) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(onClick = { menu = true }, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = { menu = true },
+                modifier = Modifier.fillMaxWidth(),
+                shapes = ButtonDefaults.shapes(),
+            ) {
                 Text(selected.ifEmpty { stringResource(R.string.input_select_option) })
                 Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
             }
@@ -197,6 +210,7 @@ private fun BooleanDialog(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun BaseDialog(
     title: String,
@@ -210,13 +224,26 @@ private fun BaseDialog(
         title = { Text(text = title, style = MaterialTheme.typography.headlineSmall) },
         text = { Column { content() } },
         confirmButton = {
-            TextButton(onClick = onConfirm, enabled = confirmEnabled) {
+            TextButton(
+                onClick = onConfirm,
+                enabled = confirmEnabled,
+                shapes = ButtonDefaults.shapes(),
+            ) {
                 Text(stringResource(R.string.dialog_confirm))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_cancel)) }
+            TextButton(
+                onClick = onDismiss,
+                shapes = ButtonDefaults.shapes(),
+            ) {
+                Text(stringResource(R.string.dialog_cancel))
+            }
         },
+        shape = RoundedCornerShape(ShapeRadius.ExtraLarge),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 

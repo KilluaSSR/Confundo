@@ -56,10 +56,14 @@ object RandomEngine {
     /**
      * @param includeActivationTime 为 false 时「开机激活时间」保持为空。
      * @param includeBootTime 为 false 时「开机时间」保持为空。
+     * @param installedGmsVersion 本机已安装的 Google Play 服务 versionName，用于生成「不低于本机」的版本。
+     * @param installedPlayVersion 本机已安装的 Play Store versionName，用途同上。
      */
     fun generate(
         includeActivationTime: Boolean = true,
         includeBootTime: Boolean = true,
+        installedGmsVersion: String? = null,
+        installedPlayVersion: String? = null,
     ): Map<String, String> {
         val p = DeviceProfiles.random()
         val op = operators.securePick()
@@ -149,8 +153,8 @@ object RandomEngine {
 
             // Google 服务
             put(FieldKeys.GOOGLE_AD_ID, UUID.randomUUID().toString())
-            put(FieldKeys.GMS_VERSION, "${randomInt(23, 25)}.${randomInt(10, 50)}.${randomInt(10, 70)}")
-            put(FieldKeys.PLAY_STORE_VERSION, "${randomInt(40, 44)}.${randomInt(1, 9)}.${randomInt(10, 40)}")
+            put(FieldKeys.GMS_VERSION, randomVersionNotBelow(installedGmsVersion, FALLBACK_GMS_VERSION))
+            put(FieldKeys.PLAY_STORE_VERSION, randomVersionNotBelow(installedPlayVersion, FALLBACK_PLAY_VERSION))
 
             put(FieldKeys.OPENGL_VERSION, p.openglVersion)
             put(FieldKeys.GL_RENDERER, p.glRenderer)
@@ -246,6 +250,16 @@ object RandomEngine {
 
     private fun randomInt(min: Int, max: Int): Int = min + rng.nextInt(max - min + 1)
 
+    private fun randomVersionNotBelow(installed: String?, fallback: String): String {
+        val base = installed?.let { VERSION_PATTERN.find(it) } ?: VERSION_PATTERN.find(fallback)
+        ?: return fallback
+        val (major, minor, patch) = base.destructured
+        val bumpedPatch = (patch.toIntOrNull() ?: 0) + randomInt(0, 5)
+        return "$major.$minor.$bumpedPatch"
+    }
+
+    private val VERSION_PATTERN = Regex("""(\d+)\.(\d+)\.(\d+)""")
+
     /** 当 Build.VERSION.RELEASE 非数字（如预览版代号）时，由 SDK_INT 推断大版本号。 */
     private fun sdkToAndroidVersion(sdk: Int): Int = when (sdk) {
         in Int.MIN_VALUE..29 -> 10
@@ -264,6 +278,9 @@ object RandomEngine {
 
     private const val HEX = "0123456789abcdef"
     private const val ALNUM = "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+
+    private const val FALLBACK_GMS_VERSION = "26.32.34"
+    private const val FALLBACK_PLAY_VERSION = "52.4.41"
 
     private fun tf() = if (rng.nextBoolean()) "true" else "false"
 }

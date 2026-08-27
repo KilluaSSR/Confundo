@@ -32,9 +32,24 @@ class ConfigRepository @Inject constructor(
         private const val IDS_KEY = "ids"
         private const val TEMPLATE_PREFIX = "_template_"
         private const val TEMPLATE_NAME_KEY = "name"
+        private const val PKG_GMS = "com.google.android.gms"
+        private const val PKG_VENDING = "com.android.vending"
 
         private fun templatePrefs(id: String) = "$TEMPLATE_PREFIX$id"
     }
+
+    private fun installedVersionName(pkg: String): String? = runCatching {
+        @Suppress("DEPRECATION")
+        context.packageManager.getPackageInfo(pkg, 0).versionName
+    }.getOrNull()
+
+    private fun randomFields(includeActivationTime: Boolean, includeBootTime: Boolean): Map<String, String> =
+        RandomEngine.generate(
+            includeActivationTime = includeActivationTime,
+            includeBootTime = includeBootTime,
+            installedGmsVersion = installedVersionName(PKG_GMS),
+            installedPlayVersion = installedVersionName(PKG_VENDING),
+        )
 
     /** 失效总线。 */
     private val invalidations = MutableSharedFlow<String>(
@@ -105,6 +120,19 @@ class ConfigRepository @Inject constructor(
         context.prefs(pkg).edit { putBoolean(FieldKeys.ENABLED, enabled) }
     }
 
+    /** 读取全局 Native Hook 开关（默认关闭）。 */
+    fun isNativeHookEnabled(): Boolean = runCatching {
+        context.prefs(FieldKeys.GLOBAL_PREFS).getBoolean(FieldKeys.NATIVE_HOOK_ENABLED, false)
+    }.getOrDefault(false)
+
+    /** 写入全局 Native Hook 开关。被 Hook 进程在下次加载目标 App 时读取，实时生效。 */
+    suspend fun setNativeHookEnabled(enabled: Boolean) = withContext(Dispatchers.IO) {
+        writeMutex.withLock {
+            context.prefs(FieldKeys.GLOBAL_PREFS)
+                .edit { putBoolean(FieldKeys.NATIVE_HOOK_ENABLED, enabled) }
+        }
+    }
+
     suspend fun setAutoReset(pkg: String, autoReset: Boolean) = write(pkg) {
         context.prefs(pkg).edit { putBoolean(FieldKeys.AUTO_RESET, autoReset) }
     }
@@ -117,7 +145,7 @@ class ConfigRepository @Inject constructor(
     suspend fun randomFill(pkg: String) {
         val s = settingsRepository.current()
         write(pkg) {
-            val values = RandomEngine.generate(s.randomizeActivationTime, s.randomizeBootTime)
+            val values = randomFields(s.randomizeActivationTime, s.randomizeBootTime)
             context.prefs(pkg).edit {
                 putBoolean(FieldKeys.ENABLED, true)
                 values.forEach { (k, v) -> putString(k, v) }
@@ -129,7 +157,7 @@ class ConfigRepository @Inject constructor(
     suspend fun applyRandom(pkg: String, autoReset: Boolean) {
         val s = settingsRepository.current()
         write(pkg) {
-            val values = RandomEngine.generate(s.randomizeActivationTime, s.randomizeBootTime)
+            val values = randomFields(s.randomizeActivationTime, s.randomizeBootTime)
             context.prefs(pkg).edit {
                 putBoolean(FieldKeys.ENABLED, true)
                 putBoolean(FieldKeys.AUTO_RESET, autoReset)
@@ -152,7 +180,7 @@ class ConfigRepository @Inject constructor(
         val s = settingsRepository.current()
         write(pkg) {
             val current = readAppConfig(pkg)
-            val fresh = RandomEngine.generate(s.randomizeActivationTime, s.randomizeBootTime)
+            val fresh = randomFields(s.randomizeActivationTime, s.randomizeBootTime)
             context.prefs(pkg).edit {
                 current.fields.forEach { (key, oldValue) ->
                     if (oldValue.isNotBlank()) {
@@ -338,7 +366,7 @@ class ConfigRepository @Inject constructor(
     suspend fun randomFillTemplate(id: String) {
         val s = settingsRepository.current()
         writeTemplates(listOf(templatePrefs(id))) {
-            val values = RandomEngine.generate(s.randomizeActivationTime, s.randomizeBootTime)
+            val values = randomFields(s.randomizeActivationTime, s.randomizeBootTime)
             context.prefs(templatePrefs(id)).edit {
                 values.forEach { (k, v) -> putString(k, v) }
             }

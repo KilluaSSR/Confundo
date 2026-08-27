@@ -39,7 +39,10 @@ object GoogleHooks : HookDelegate {
         val hasFlagsClass = FLAGS_CLASS.toClassOrNull() != null
 
         fun applyVersion(pi: PackageInfo, version: String) {
-            val code = version.replace(Regex("[^0-9]"), "").take(9).toLongOrNull() ?: 0L
+            @Suppress("DEPRECATION")
+            val realCode = pi.longVersionCode
+            val derived = version.replace(Regex("[^0-9]"), "").take(9).toLongOrNull() ?: 0L
+            val code = maxOf(derived, realCode)
             pi.versionName = version
             pi.longVersionCode = code
             @Suppress("DEPRECATION")

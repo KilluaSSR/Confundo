@@ -205,6 +205,11 @@
     <string name="settings_time_cleared_activation">已清除所有开机激活时间</string>
     <string name="settings_time_cleared_boot">已清除所有开机时间</string>
 
+    <!-- Native hook -->
+    <string name="settings_native_title">Native Hook</string>
+    <string name="settings_native_hook_title">启用 Native Hook</string>
+    <string name="settings_native_hook_summary">在 Java 层之外叠加 Native 层伪装（拦截 __system_property_get、uname、build.prop / proc 直读、Vulkan 等）</string>
+
     <!-- Backup & restore -->
     <string name="settings_backup_title">备份与恢复</string>
     <string name="settings_backup_summary">将应用配置导出为文件。</string>

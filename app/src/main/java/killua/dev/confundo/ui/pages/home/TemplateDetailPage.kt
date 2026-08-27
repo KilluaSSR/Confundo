@@ -2,6 +2,7 @@ package killua.dev.confundo.ui.pages.home
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +12,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -18,16 +24,17 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,15 +54,19 @@ import killua.dev.confundo.R
 import killua.dev.confundo.data.FieldCatalog
 import killua.dev.confundo.data.FieldSpec
 import killua.dev.confundo.ui.components.AppDetailItem
+import killua.dev.confundo.ui.components.AppPosition
 import killua.dev.confundo.ui.components.FieldInputDialog
 import killua.dev.confundo.ui.components.ObserveSnackbarEffects
 import killua.dev.confundo.ui.components.PageLoadingIndicator
 import killua.dev.confundo.ui.components.SectionHeader
 import killua.dev.confundo.ui.components.TextInputDialog
+import killua.dev.confundo.ui.components.animatedGroupedShape
 import killua.dev.confundo.ui.theme.Dimens
+import killua.dev.confundo.ui.theme.ShapeRadius
+import killua.dev.confundo.ui.theme.Spacing
 import killua.dev.confundo.utils.LocalNavController
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TemplateDetailPage(
     templateId: String,
@@ -73,19 +85,29 @@ fun TemplateDetailPage(
     var editingValue by remember { mutableStateOf("") }
     var editingName by remember { mutableStateOf(false) }
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
+            LargeFlexibleTopAppBar(
                 title = {
-                    Text(state.name.ifEmpty { if (state.isNew) stringResource(R.string.template_new) else "" })
+                    Text(
+                        state.name.ifEmpty {
+                            if (state.isNew) stringResource(R.string.template_new) else ""
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(
+                        onClick = { navController.popBackStack() },
+                        shapes = IconButtonDefaults.shapes(),
+                    ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.cd_back)
@@ -93,7 +115,10 @@ fun TemplateDetailPage(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.emitIntentOnIO(TemplateDetailIntent.RandomFill) }) {
+                    IconButton(
+                        onClick = { viewModel.emitIntentOnIO(TemplateDetailIntent.RandomFill) },
+                        shapes = IconButtonDefaults.shapes(),
+                    ) {
                         Icon(
                             Icons.Filled.Refresh,
                             contentDescription = stringResource(R.string.menu_random_fill)
@@ -116,6 +141,9 @@ fun TemplateDetailPage(
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
                             .widthIn(max = Dimens.ContentMaxWidth)
+                            .windowInsetsPadding(
+                                WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                            )
                             .align(Alignment.TopCenter)
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -125,7 +153,9 @@ fun TemplateDetailPage(
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp)
                                 .clickable { editingName = true },
-                            shape = MaterialTheme.shapes.small,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(
+                                ShapeRadius.Large
+                            ),
                             color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         ) {
                             Row(
@@ -151,24 +181,35 @@ fun TemplateDetailPage(
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant
-                        )
-
                         FieldCatalog.grouped.forEach { (category, specs) ->
                             SectionHeader(title = stringResource(category.titleRes))
-                            specs.forEach { spec ->
-                                val title = stringResource(spec.labelRes)
-                                AppDetailItem(
-                                    title = title,
-                                    content = state.fields[spec.key] ?: "",
-                                    onClick = {
-                                        editingSpec = spec
-                                        editingTitle = title
-                                        editingValue = state.fields[spec.key] ?: ""
+                            Column(
+                                modifier = Modifier.padding(horizontal = Spacing.lg),
+                                verticalArrangement = Arrangement.spacedBy(Spacing.xxs),
+                            ) {
+                                specs.forEachIndexed { index, spec ->
+                                    val title = stringResource(spec.labelRes)
+                                    val position = when {
+                                        specs.size == 1 -> AppPosition.Single
+                                        index == 0 -> AppPosition.Top
+                                        index == specs.lastIndex -> AppPosition.Bottom
+                                        else -> AppPosition.Middle
                                     }
-                                )
+                                    Surface(
+                                        shape = animatedGroupedShape(position, false, Dimens.ListCorner),
+                                        color = MaterialTheme.colorScheme.surfaceBright,
+                                    ) {
+                                        AppDetailItem(
+                                            title = title,
+                                            content = state.fields[spec.key] ?: "",
+                                            onClick = {
+                                                editingSpec = spec
+                                                editingTitle = title
+                                                editingValue = state.fields[spec.key] ?: ""
+                                            }
+                                        )
+                                    }
+                                }
                             }
                         }
 

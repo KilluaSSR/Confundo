@@ -1,5 +1,9 @@
 package killua.dev.confundo.ui.components
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -19,16 +23,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -37,12 +42,13 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import killua.dev.confundo.R
 import killua.dev.confundo.ui.theme.Dimens
+import killua.dev.confundo.ui.theme.ConfundoTheme
+import killua.dev.confundo.ui.theme.ShapeRadius
 import killua.dev.confundo.ui.theme.Spacing
 
 enum class AppPosition { Single, Top, Middle, Bottom }
@@ -57,21 +63,53 @@ data class AppItemData(
     val isSpoofingEnabled: Boolean = false,
 )
 
-internal fun groupedShape(position: AppPosition, cornerRadius: Dp): RoundedCornerShape = when (position) {
-    AppPosition.Single -> RoundedCornerShape(cornerRadius)
-    AppPosition.Top -> RoundedCornerShape(
-        topStart = cornerRadius,
-        topEnd = cornerRadius,
-        bottomStart = 0.dp,
-        bottomEnd = 0.dp,
+@Composable
+internal fun animatedGroupedShape(
+    position: AppPosition,
+    selected: Boolean,
+    cornerRadius: Dp,
+): RoundedCornerShape {
+    val inner = ShapeRadius.ExtraSmall
+    val targetTop = if (selected || position == AppPosition.Single || position == AppPosition.Top) {
+        cornerRadius
+    } else {
+        inner
+    }
+    val targetBottom =
+        if (selected || position == AppPosition.Single || position == AppPosition.Bottom) {
+            cornerRadius
+        } else {
+            inner
+        }
+    val shapeSpec = spring<Dp>(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessLow,
     )
-    AppPosition.Middle -> RoundedCornerShape(0.dp)
-    AppPosition.Bottom -> RoundedCornerShape(
-        topStart = 0.dp,
-        topEnd = 0.dp,
-        bottomStart = cornerRadius,
-        bottomEnd = cornerRadius,
+    val topRadius by animateDpAsState(targetTop, shapeSpec, label = "groupTopRadius")
+    val bottomRadius by animateDpAsState(targetBottom, shapeSpec, label = "groupBottomRadius")
+    return RoundedCornerShape(
+        topStart = topRadius,
+        topEnd = topRadius,
+        bottomStart = bottomRadius,
+        bottomEnd = bottomRadius,
     )
+}
+
+@Composable
+internal fun animatedGroupedColor(selected: Boolean): Color {
+    val target = if (selected) {
+        MaterialTheme.colorScheme.secondaryContainer
+    } else {
+        MaterialTheme.colorScheme.surfaceBright
+    }
+    return animateColorAsState(
+        targetValue = target,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessLow,
+        ),
+        label = "groupContainerColor",
+    ).value
 }
 
 @Composable
@@ -86,7 +124,8 @@ fun AppList(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = Spacing.lg),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(Spacing.xxs),
     ) {
         apps.forEachIndexed { index, appData ->
             val position = when {
@@ -103,9 +142,6 @@ fun AppList(
                 onClick = { onClick(appData.packageName) },
                 onLongClick = { onLongClick(appData.packageName) },
             )
-            if (index < apps.lastIndex) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            }
         }
     }
 }
@@ -120,14 +156,8 @@ fun AppListRow(
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {},
 ) {
-    // 使用语义化的 surface 层级，而非用 alpha 稀释 container（后者会破坏对比度与深浅色一致性）。
-    val containerColor = if (selected) {
-        MaterialTheme.colorScheme.secondaryContainer
-    } else {
-        MaterialTheme.colorScheme.surfaceContainerHigh
-    }
-
-    val shape = groupedShape(position, cornerRadius)
+    val containerColor = animatedGroupedColor(selected)
+    val shape = animatedGroupedShape(position, selected, cornerRadius)
 
     val stateText = stringResource(
         if (appData.isSpoofingEnabled) R.string.cd_app_enabled else R.string.cd_app_disabled
@@ -137,6 +167,11 @@ fun AppListRow(
         modifier = modifier.fillMaxWidth(),
         shape = shape,
         color = containerColor,
+        contentColor = if (selected) {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
     ) {
         Row(
             modifier = Modifier
@@ -186,7 +221,7 @@ fun AppListRow(
                     text = appData.appName,
                     style = MaterialTheme.typography.titleMedium,
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(Spacing.xxs))
                 Text(
                     text = appData.packageName,
                     style = MaterialTheme.typography.bodySmall,
@@ -201,7 +236,7 @@ fun AppListRow(
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(Spacing.xs))
             }
 
             Icon(
@@ -218,7 +253,7 @@ fun AppListRow(
 @Preview(showBackground = true)
 @Composable
 fun AppListPreview() {
-    MaterialTheme {
+    ConfundoTheme(dynamicColor = false) {
         val fakeApps = listOf(
             AppItemData(
                 "1",
@@ -233,7 +268,7 @@ fun AppListPreview() {
             ),
         )
         Surface(
-            modifier = Modifier.padding(vertical = 12.dp),
+            modifier = Modifier.padding(vertical = Spacing.md),
             color = MaterialTheme.colorScheme.background
         ) {
             AppList(apps = fakeApps)

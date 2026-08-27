@@ -5,6 +5,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +19,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -36,13 +43,14 @@ import androidx.compose.material3.FloatingToolbarDefaults.vibrantFloatingToolbar
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -84,17 +92,21 @@ fun TemplateManagePage(viewModel: TemplateManageViewModel = hiltViewModel()) {
 
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
+            LargeFlexibleTopAppBar(
                 title = { Text(stringResource(R.string.template_manage)) },
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(
+                        onClick = { navController.popBackStack() },
+                        shapes = IconButtonDefaults.shapes(),
+                    ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.cd_back)
@@ -119,6 +131,9 @@ fun TemplateManagePage(viewModel: TemplateManageViewModel = hiltViewModel()) {
             Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
+                )
         ) {
             when (state.phase) {
                 TemplateManagePhase.Loading -> PageLoadingIndicator()
@@ -132,7 +147,8 @@ fun TemplateManagePage(viewModel: TemplateManageViewModel = hiltViewModel()) {
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 16.dp),
-                            contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp)
+                            contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
                         ) {
                             itemsIndexed(
                                 state.templates,
@@ -175,8 +191,18 @@ fun TemplateManagePage(viewModel: TemplateManageViewModel = hiltViewModel()) {
 
             androidx.compose.animation.AnimatedVisibility(
                 visible = showToolbar,
-                enter = slideInVertically { it } + fadeIn(),
-                exit = slideOutVertically { it } + fadeOut(),
+                enter = slideInVertically(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow,
+                    )
+                ) { it } + fadeIn(spring(stiffness = Spring.StiffnessMedium)),
+                exit = slideOutVertically(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMedium,
+                    )
+                ) { it } + fadeOut(spring(stiffness = Spring.StiffnessMedium)),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
@@ -192,16 +218,22 @@ fun TemplateManagePage(viewModel: TemplateManageViewModel = hiltViewModel()) {
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            FilledIconButton(onClick = { selectedIds.clear() }) {
+                            FilledIconButton(
+                                onClick = { selectedIds.clear() },
+                                shapes = IconButtonDefaults.shapes(),
+                            ) {
                                 Icon(
                                     Icons.Default.Deselect,
                                     stringResource(R.string.toolbar_deselect_all)
                                 )
                             }
-                            FilledIconButton(onClick = {
-                                selectedIds.clear()
-                                selectedIds.addAll(state.templates.map { it.id })
-                            }) {
+                            FilledIconButton(
+                                onClick = {
+                                    selectedIds.clear()
+                                    selectedIds.addAll(state.templates.map { it.id })
+                                },
+                                shapes = IconButtonDefaults.shapes(),
+                            ) {
                                 Icon(
                                     Icons.Default.SelectAll,
                                     stringResource(R.string.toolbar_select_all)
@@ -209,6 +241,7 @@ fun TemplateManagePage(viewModel: TemplateManageViewModel = hiltViewModel()) {
                             }
                             FilledTonalButton(
                                 onClick = { showDeleteDialog = true },
+                                shapes = ButtonDefaults.shapes(),
                                 colors = ButtonDefaults.filledTonalButtonColors(
                                     containerColor = MaterialTheme.colorScheme.errorContainer,
                                 )
@@ -229,17 +262,26 @@ fun TemplateManagePage(viewModel: TemplateManageViewModel = hiltViewModel()) {
             title = { Text(stringResource(R.string.dialog_delete_template_title)) },
             text = { Text(stringResource(R.string.dialog_delete_template_message, count)) },
             confirmButton = {
-                TextButton(onClick = {
-                    showDeleteDialog = false
-                    val ids = selectedIds.toList()
-                    selectedIds.clear()
-                    viewModel.emitIntentOnIO(TemplateManageIntent.DeleteSelected(ids))
-                }) {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        val ids = selectedIds.toList()
+                        selectedIds.clear()
+                        viewModel.emitIntentOnIO(TemplateManageIntent.DeleteSelected(ids))
+                    },
+                    shapes = ButtonDefaults.shapes(),
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) {
                     Text(stringResource(R.string.dialog_delete))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
+                TextButton(
+                    onClick = { showDeleteDialog = false },
+                    shapes = ButtonDefaults.shapes(),
+                ) {
                     Text(stringResource(R.string.dialog_cancel))
                 }
             }
@@ -267,7 +309,10 @@ private fun EmptyTemplates(onCreate: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(16.dp))
-        FilledTonalButton(onClick = onCreate) {
+        FilledTonalButton(
+            onClick = onCreate,
+            shapes = ButtonDefaults.shapes(),
+        ) {
             Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.size(8.dp))
             Text(stringResource(R.string.template_empty_action))

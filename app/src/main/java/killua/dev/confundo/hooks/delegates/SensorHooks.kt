@@ -36,6 +36,17 @@ object SensorHooks : HookDelegate {
                     afterHook { (result as? Sensor)?.let { patchVendor(it, vendor) } }
                 }
             } catch (_: NoSuchMethodError) {}
+
+            try {
+                injectMember {
+                    method { name = "getDynamicSensorList"; param(Int::class.java) }
+                    afterHook {
+                        (result as? List<*>)?.forEach { s ->
+                            (s as? Sensor)?.let { patchVendor(it, vendor) }
+                        }
+                    }
+                }
+            } catch (_: NoSuchMethodError) {}
         }
     }
 
