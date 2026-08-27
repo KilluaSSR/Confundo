@@ -116,7 +116,7 @@ fun SettingsPageContent(
                         WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
                     )
                     .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(Spacing.md),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xxs),
             ) {
                 RefreshSection(state, onIntent)
                 TimeFieldsSection(state, onIntent)
@@ -154,7 +154,7 @@ private fun TimeFieldsSection(state: SettingsUiState, onIntent: (SettingsIntent)
     var pendingClear by remember { mutableStateOf<ClearTarget?>(null) }
 
     Column {
-        SectionHeader(title = stringResource(R.string.settings_time_title))
+        SectionHeader(title = stringResource(R.string.settings_time_title), startPadding = 0.dp)
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
             CardSwitch(
                 text = stringResource(R.string.settings_time_randomize_activation),
@@ -240,7 +240,7 @@ private fun TimeFieldsSection(state: SettingsUiState, onIntent: (SettingsIntent)
 @Composable
 private fun NativeHookSection(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
     Column {
-        SectionHeader(title = stringResource(R.string.settings_native_title))
+        SectionHeader(title = stringResource(R.string.settings_native_title), startPadding = 0.dp)
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
             CardSwitch(
                 text = stringResource(R.string.settings_native_hook_title),
@@ -281,7 +281,7 @@ private fun BackupSection(
     ) { uri -> pendingImportUri = uri }
 
     Column {
-        SectionHeader(title = stringResource(R.string.settings_backup_title))
+        SectionHeader(title = stringResource(R.string.settings_backup_title), startPadding = 0.dp)
         Surface(
             shape = settingsItemShape(SettingsItemPosition.Single),
             color = MaterialTheme.colorScheme.surfaceBright,
@@ -424,7 +424,7 @@ private fun RefreshSection(state: SettingsUiState, onIntent: (SettingsIntent) ->
 @Composable
 private fun AppearanceSection(state: SettingsUiState, onIntent: (SettingsIntent) -> Unit) {
     Column {
-        SectionHeader(title = stringResource(R.string.settings_appearance_title))
+        SectionHeader(title = stringResource(R.string.settings_appearance_title), startPadding = 0.dp)
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
             Surface(
                 shape = settingsItemShape(SettingsItemPosition.Top),
