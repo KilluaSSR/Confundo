@@ -64,6 +64,7 @@ sealed interface HomeIntent : UIIntent {
     data object ToggleSystemApps : HomeIntent
     data object ApplyToAll : HomeIntent
     data class BatchSetEnabled(val pkgs: List<String>, val enabled: Boolean) : HomeIntent
+    data class BatchSetNativeHook(val pkgs: List<String>, val enabled: Boolean) : HomeIntent
     data class BatchSetAutoReset(val pkgs: List<String>, val autoReset: Boolean) : HomeIntent
     data class ApplyTemplate(val pkgs: List<String>, val templateId: String) : HomeIntent
     data class SetSearchQuery(val query: String) : HomeIntent
@@ -90,6 +91,7 @@ class HomeViewModel @Inject constructor(
             HomeIntent.ToggleSystemApps -> toggleSystemApps()
             HomeIntent.ApplyToAll -> applyToAll()
             is HomeIntent.BatchSetEnabled -> batchSetEnabled(intent.pkgs, intent.enabled)
+            is HomeIntent.BatchSetNativeHook -> batchSetNativeHook(intent.pkgs, intent.enabled)
             is HomeIntent.BatchSetAutoReset -> batchSetAutoReset(intent.pkgs, intent.autoReset)
             is HomeIntent.ApplyTemplate -> applyTemplate(intent.pkgs, intent.templateId)
             is HomeIntent.SetSearchQuery -> updateState { it.copy(searchQuery = intent.query) }
@@ -220,6 +222,16 @@ class HomeViewModel @Inject constructor(
     private suspend fun batchSetEnabled(pkgs: List<String>, enabled: Boolean) {
         pkgs.forEach { repository.setEnabled(it, enabled) }
         val res = if (enabled) R.string.feedback_enabled_done else R.string.feedback_disabled_done
+        notify(context.getString(res, pkgs.size))
+    }
+
+    private suspend fun batchSetNativeHook(pkgs: List<String>, enabled: Boolean) {
+        pkgs.forEach { pkg ->
+            // 开启 Native Hook 需要该 App 的 Java Hook 同时开启，否则不生效。
+            if (enabled) repository.setEnabled(pkg, true)
+            repository.setAppNativeHook(pkg, enabled)
+        }
+        val res = if (enabled) R.string.feedback_native_on_done else R.string.feedback_native_off_done
         notify(context.getString(res, pkgs.size))
     }
 

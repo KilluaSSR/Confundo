@@ -27,6 +27,16 @@
     <string name="toolbar_reset_on">重置开</string>
     <string name="toolbar_reset_off">重置关</string>
     <string name="toolbar_delete_selected">删除选中</string>
+    <string name="toolbar_batch_actions">批量操作</string>
+    <string name="toolbar_selected_count">已选 %1$d 项</string>
+    <string name="batch_sheet_title">批量操作</string>
+    <string name="batch_group_java">Java Hook</string>
+    <string name="batch_group_native">Native Hook</string>
+    <string name="batch_group_reset">自动重置</string>
+    <string name="batch_group_template">模版</string>
+    <string name="batch_on">开启</string>
+    <string name="batch_off">关闭</string>
+    <string name="batch_native_hint">开启后将同时启用所选应用的 Java Hook</string>
     <string name="switch_enable">启用</string>
     <string name="switch_auto_reset">受自动重置影响</string>
     <string name="menu_random_fill">随机填充</string>
@@ -169,6 +179,8 @@
     <string name="feedback_reset_on_done">已对 %1$d 个应用开启自动重置</string>
     <string name="feedback_reset_off_done">已对 %1$d 个应用关闭自动重置</string>
     <string name="feedback_apply_template_done">已将模版应用到 %1$d 个应用</string>
+    <string name="feedback_native_on_done">已对 %1$d 个应用开启 Native Hook</string>
+    <string name="feedback_native_off_done">已对 %1$d 个应用关闭 Native Hook</string>
     <string name="feedback_template_deleted">已删除 %1$d 个模版</string>
 
     <!-- Delete confirmation -->
@@ -182,6 +194,10 @@
     <!-- High-risk app warning -->
     <string name="warning_high_risk_title">高风险应用</string>
     <string name="warning_high_risk_message">为该应用伪装设备指纹可能导致账号异常甚至封禁，请谨慎操作，切勿开启自动重置。</string>
+
+    <!-- Native hook risk warning -->
+    <string name="warning_native_hook_risk_title">Native Hook 风险</string>
+    <string name="warning_native_hook_risk_message">对该应用开启 Native Hook 可能导致其无法正常工作。</string>
 
     <!-- Appearance settings -->
     <string name="settings_appearance_title">外观</string>
@@ -208,7 +224,8 @@
     <!-- Native hook -->
     <string name="settings_native_title">Native Hook</string>
     <string name="settings_native_hook_title">启用 Native Hook</string>
-    <string name="settings_native_hook_summary">在 Java 层之外叠加 Native 层伪装（拦截 __system_property_get、uname、build.prop / proc 直读、Vulkan 等）</string>
+    <string name="settings_native_hook_summary">在 Java 层之外叠加 Native 层伪装（拦截 __system_property_get、uname、build.prop / proc 直读、Vulkan 等）。</string>
+    <string name="switch_native_hook">同时启用 Native Hook</string>
 
     <!-- Backup & restore -->
     <string name="settings_backup_title">备份与恢复</string>

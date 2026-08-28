@@ -41,6 +41,7 @@ class BackupRepository @Inject constructor(
         private const val KEY_PACKAGE = "packageName"
         private const val KEY_ENABLED = "enabled"
         private const val KEY_AUTO_RESET = "autoReset"
+        private const val KEY_NATIVE_HOOK = "nativeHookEnabled"
         private const val KEY_FIELDS = "fields"
 
         private const val KEY_TEMPLATE_ID = "id"
@@ -100,6 +101,7 @@ class BackupRepository @Inject constructor(
             obj.put(KEY_PACKAGE, pkg)
             obj.put(KEY_ENABLED, cfg.enabled)
             obj.put(KEY_AUTO_RESET, cfg.autoReset)
+            obj.put(KEY_NATIVE_HOOK, cfg.nativeHookEnabled)
             obj.put(KEY_FIELDS, fieldsToJson(cfg.fields))
             appsArr.put(obj)
         }
@@ -183,6 +185,7 @@ class BackupRepository @Inject constructor(
                 val config = ConfigRepository.AppConfig(
                     enabled = obj.optBoolean(KEY_ENABLED, false),
                     autoReset = obj.optBoolean(KEY_AUTO_RESET, false),
+                    nativeHookEnabled = obj.optBoolean(KEY_NATIVE_HOOK, false),
                     fields = jsonToFields(obj.optJSONObject(KEY_FIELDS)),
                 )
                 runCatching { configRepository.writeAppConfig(pkg, config) }

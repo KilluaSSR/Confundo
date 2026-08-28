@@ -68,6 +68,7 @@ class ConfigRepository @Inject constructor(
     data class AppConfig(
         val enabled: Boolean = false,
         val autoReset: Boolean = false,
+        val nativeHookEnabled: Boolean = false,
         val fields: Map<String, String> = emptyMap(),
     )
 
@@ -79,6 +80,7 @@ class ConfigRepository @Inject constructor(
         return AppConfig(
             enabled = runCatching { p.getBoolean(FieldKeys.ENABLED, false) }.getOrDefault(false),
             autoReset = runCatching { p.getBoolean(FieldKeys.AUTO_RESET, false) }.getOrDefault(false),
+            nativeHookEnabled = runCatching { p.getBoolean(FieldKeys.NATIVE_HOOK_ENABLED, false) }.getOrDefault(false),
             fields = fields,
         )
     }
@@ -86,7 +88,9 @@ class ConfigRepository @Inject constructor(
     fun appConfigFlow(pkg: String): Flow<AppConfig> =
         invalidations
             .onStart { emit(pkg) }
-            .mapNotNull { changed -> if (changed == pkg) readAppConfig(pkg) else null }
+            .mapNotNull { changed ->
+                if (changed == pkg || changed == FieldKeys.GLOBAL_PREFS) readAppConfig(pkg) else null
+            }
             .flowOn(Dispatchers.IO)
 
     suspend fun getAppConfig(pkg: String): AppConfig =
@@ -99,7 +103,10 @@ class ConfigRepository @Inject constructor(
     fun enabledChanges(): Flow<Pair<String, Boolean>> =
         flow {
             invalidations.collect { changed ->
-                if (changed != TEMPLATES_PREFS && !changed.startsWith(TEMPLATE_PREFIX)) {
+                if (changed != TEMPLATES_PREFS &&
+                    changed != FieldKeys.GLOBAL_PREFS &&
+                    !changed.startsWith(TEMPLATE_PREFIX)
+                ) {
                     val enabled = runCatching {
                         context.prefs(changed).getBoolean(FieldKeys.ENABLED, false)
                     }.getOrDefault(false)
@@ -117,20 +124,28 @@ class ConfigRepository @Inject constructor(
         }
 
     suspend fun setEnabled(pkg: String, enabled: Boolean) = write(pkg) {
-        context.prefs(pkg).edit { putBoolean(FieldKeys.ENABLED, enabled) }
+        context.prefs(pkg).edit {
+            putBoolean(FieldKeys.ENABLED, enabled)
+            // 关闭 Java Hook 总开关时，自动关闭该 App 的 Native 开关。
+            if (!enabled) putBoolean(FieldKeys.NATIVE_HOOK_ENABLED, false)
+        }
     }
 
-    /** 读取全局 Native Hook 开关（默认关闭）。 */
+    suspend fun setAppNativeHook(pkg: String, enabled: Boolean) = write(pkg) {
+        context.prefs(pkg).edit { putBoolean(FieldKeys.NATIVE_HOOK_ENABLED, enabled) }
+    }
+
     fun isNativeHookEnabled(): Boolean = runCatching {
         context.prefs(FieldKeys.GLOBAL_PREFS).getBoolean(FieldKeys.NATIVE_HOOK_ENABLED, false)
     }.getOrDefault(false)
 
-    /** 写入全局 Native Hook 开关。被 Hook 进程在下次加载目标 App 时读取，实时生效。 */
+    /** 写入全局 Native Hook 总开关。被 Hook 进程在下次加载目标 App 时读取，实时生效。 */
     suspend fun setNativeHookEnabled(enabled: Boolean) = withContext(Dispatchers.IO) {
         writeMutex.withLock {
             context.prefs(FieldKeys.GLOBAL_PREFS)
                 .edit { putBoolean(FieldKeys.NATIVE_HOOK_ENABLED, enabled) }
         }
+        notifyChanged(FieldKeys.GLOBAL_PREFS)
     }
 
     suspend fun setAutoReset(pkg: String, autoReset: Boolean) = write(pkg) {
@@ -242,6 +257,7 @@ class ConfigRepository @Inject constructor(
         context.prefs(pkg).edit {
             putBoolean(FieldKeys.ENABLED, config.enabled)
             putBoolean(FieldKeys.AUTO_RESET, config.autoReset)
+            putBoolean(FieldKeys.NATIVE_HOOK_ENABLED, config.nativeHookEnabled)
             config.fields.forEach { (k, v) -> putString(k, v) }
         }
     }

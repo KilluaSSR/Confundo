@@ -60,14 +60,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            // 活动级 SettingsViewModel（以 Activity 为 ViewModelStoreOwner），
-            // 用于把外观偏好响应式地驱动主题。
             val settingsVm: SettingsViewModel = hiltViewModel()
             val settingsState = settingsVm.uiState.collectAsStateWithLifecycle()
             LaunchedEffect(Unit) { settingsVm.emitIntentOnIO(SettingsIntent.Load) }
 
-            // 仅派生主题所需的两个字段：其它设置项变化（如刷新间隔、上次运行时间）
-            // 不会触发整棵树（主题 + 导航 + 当前页）重组。
             val themeMode by remember {
                 derivedStateOf {
                     when (settingsState.value.darkMode) {
@@ -132,8 +128,6 @@ private fun MainTabsContainer() {
     val navBackStackEntry by tabNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // 自适应导航：宽屏（平板/折叠屏展开/横屏）使用侧边 NavigationRail，紧凑宽度使用底部 NavigationBar。
-    // 用 LocalConfiguration 判定断点，避免 BoxWithConstraints 的 SubcomposeLayout 包裹动画 NavHost 带来的额外开销。
     val useRail = LocalConfiguration.current.screenWidthDp.dp >= Dimens.CompactWidthBreakpoint
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -165,7 +159,6 @@ private fun MainTabsContainer() {
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth(),
-                        // 同级 Tab 切换使用 Fade Through，而非 push 型横向滑动。
                         enterTransition = TabEnterTransition,
                         exitTransition = TabExitTransition,
                         popEnterTransition = TabEnterTransition,

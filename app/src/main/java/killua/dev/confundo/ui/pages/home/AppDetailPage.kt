@@ -1,5 +1,10 @@
 package killua.dev.confundo.ui.pages.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,7 +69,28 @@ import killua.dev.confundo.ui.theme.Spacing
 import killua.dev.confundo.utils.LocalNavController
 
 // 高风险应用：为其伪装指纹可能导致账号异常/封禁（见 README 特别提醒）。
-private val HighRiskPackages = setOf("com.tencent.mm")
+private val HighRiskPackages = setOf(
+    "com.tencent.mm",        // 微信
+    "com.icbc",              // 工商银行
+    "com.chinamworld.main",  // 中国银行
+    "com.chinamworld.bocmbci", // 建设银行
+    "cmb.pb",                // 招商银行
+    "com.ecitic.bank.mobile", // 中信银行
+    "com.android.bankabc",   // 农业银行
+)
+
+// Native Hook 风险应用：对其开启 Native Hook 可能导致闪退或功能异常。
+private val NativeHookRiskPackages = setOf(
+    "com.icbc",              // 工商银行
+    "com.chinamworld.main",  // 中国银行
+    "com.chinamworld.bocmbci", // 建设银行
+    "cmb.pb",                // 招商银行
+    "com.ecitic.bank.mobile", // 中信银行
+    "com.android.bankabc",   // 农业银行
+    "com.zhiliaoapp.musically", // TikTok
+    "com.ss.android.ugc.trill", // TikTok
+    "com.ss.android.ugc.aweme", // 抖音
+)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -175,6 +201,38 @@ fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) 
                             containerColor = MaterialTheme.colorScheme.surfaceBright,
                             shape = animatedGroupedShape(AppPosition.Bottom, false, Dimens.ListCorner),
                         )
+
+                        AnimatedVisibility(
+                            visible = state.nativeHookGlobalEnabled && state.enabled,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically(),
+                        ) {
+                            Column {
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                if (pkg in NativeHookRiskPackages) {
+                                    Highlight(
+                                        warningType = HighlightType.CAUTION,
+                                        icon = Icons.Filled.Warning,
+                                        title = stringResource(R.string.warning_native_hook_risk_title),
+                                        text = stringResource(R.string.warning_native_hook_risk_message),
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+
+                                CardSwitch(
+                                    text = stringResource(R.string.switch_native_hook),
+                                    checked = state.nativeHookEnabled,
+                                    onCheckedChange = {
+                                        viewModel.emitIntentOnIO(AppDetailIntent.SetNativeHook(it))
+                                    },
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    containerColor = MaterialTheme.colorScheme.surfaceBright,
+                                    shape = animatedGroupedShape(AppPosition.Single, false, Dimens.ListCorner),
+                                )
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(8.dp))
                         FieldCatalog.grouped.forEach { (category, specs) ->

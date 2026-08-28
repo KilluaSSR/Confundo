@@ -41,10 +41,13 @@ object HookEntry : IYukiHookXposedInit {
             // 全空则整体放行真实值。
             if (normalizedFields.values.all { it.isEmpty() }) return@loadApp
 
-            // Native Hook 总开关
-            val nativeEnabled = runCatching {
+            val nativeGlobal = runCatching {
                 prefs(FieldKeys.GLOBAL_PREFS).getBoolean(FieldKeys.NATIVE_HOOK_ENABLED, false)
             }.getOrDefault(false)
+            val nativePerApp = runCatching {
+                prefs(pkg).getBoolean(FieldKeys.NATIVE_HOOK_ENABLED, false)
+            }.getOrDefault(false)
+            val nativeEnabled = nativeGlobal && nativePerApp
 
             val activeDelegates =
                 if (nativeEnabled) delegates else delegates.filterNot { it === NativeHooks }

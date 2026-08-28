@@ -45,8 +45,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.rounded.Android
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ButtonDefaults
@@ -62,6 +60,7 @@ import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.FloatingToolbarDefaults.vibrantFloatingToolbarColors
 import androidx.compose.material3.HorizontalFloatingToolbar
+import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -102,6 +101,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -160,13 +160,14 @@ fun HomePage(viewModel: HomeViewModel = hiltViewModel()) {
     var showApplyAllDialog by remember { mutableStateOf(false) }
     var showTemplatePicker by remember { mutableStateOf(false) }
     var templatePickerItems by remember { mutableStateOf<List<TemplateItem>>(emptyList()) }
+    var showBatchSheet by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
+                title = { Text(stringResource(R.string.app_name), fontWeight = FontWeight.ExtraBold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ),
@@ -359,40 +360,20 @@ fun HomePage(viewModel: HomeViewModel = hiltViewModel()) {
                     .navigationBarsPadding()
             ) {
                 SelectionToolbar(
-                    onDeselectAll = { selectedPkgs.clear() },
-                    onSelectAll = {
-                        selectedPkgs.clear()
-                        selectedPkgs.addAll(visibleApps.map { it.packageName })
-                    },
-                    onEnableAll = {
-                        val pkgs = selectedPkgs.toList()
-                        selectedPkgs.clear()
-                        viewModel.emitIntentOnIO(HomeIntent.BatchSetEnabled(pkgs, true))
-                    },
-                    onDisableAll = {
-                        val pkgs = selectedPkgs.toList()
-                        selectedPkgs.clear()
-                        viewModel.emitIntentOnIO(HomeIntent.BatchSetEnabled(pkgs, false))
-                    },
-                    onResetOn = {
-                        val pkgs = selectedPkgs.toList()
-                        selectedPkgs.clear()
-                        viewModel.emitIntentOnIO(HomeIntent.BatchSetAutoReset(pkgs, true))
-                    },
-                    onResetOff = {
-                        val pkgs = selectedPkgs.toList()
-                        selectedPkgs.clear()
-                        viewModel.emitIntentOnIO(HomeIntent.BatchSetAutoReset(pkgs, false))
-                    },
-                    onApplyTemplate = {
-                        scope.launch {
-                            val templates = viewModel.loadTemplates()
-                            if (templates.isNotEmpty()) {
-                                templatePickerItems = templates
-                                showTemplatePicker = true
-                            }
+                    selectedCount = selectedPkgs.size,
+                    allSelected = visibleApps.isNotEmpty() &&
+                        visibleApps.all { it.packageName in selectedPkgs },
+                    onExit = { selectedPkgs.clear() },
+                    onToggleSelectAll = {
+                        val all = visibleApps.map { it.packageName }
+                        if (all.isNotEmpty() && all.all { it in selectedPkgs }) {
+                            selectedPkgs.clear()
+                        } else {
+                            selectedPkgs.clear()
+                            selectedPkgs.addAll(all)
                         }
                     },
+                    onOpenBatchActions = { showBatchSheet = true },
                 )
             }
 
@@ -516,6 +497,44 @@ fun HomePage(viewModel: HomeViewModel = hiltViewModel()) {
                 }
             }
             Box(modifier = Modifier.navigationBarsPadding())
+        }
+    }
+
+    if (showBatchSheet) {
+        val sheetState = rememberModalBottomSheetState()
+        val runBatch: (HomeIntent) -> Unit = { intent ->
+            showBatchSheet = false
+            selectedPkgs.clear()
+            viewModel.emitIntentOnIO(intent)
+        }
+        ModalBottomSheet(
+            onDismissRequest = { showBatchSheet = false },
+            sheetState = sheetState,
+            shape = RoundedCornerShape(
+                topStart = ShapeRadius.ExtraLarge,
+                topEnd = ShapeRadius.ExtraLarge,
+            ),
+            scrimColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.7f),
+        ) {
+            BatchActionsSheet(
+                selectedCount = selectedPkgs.size,
+                onJavaOn = { runBatch(HomeIntent.BatchSetEnabled(selectedPkgs.toList(), true)) },
+                onJavaOff = { runBatch(HomeIntent.BatchSetEnabled(selectedPkgs.toList(), false)) },
+                onNativeOn = { runBatch(HomeIntent.BatchSetNativeHook(selectedPkgs.toList(), true)) },
+                onNativeOff = { runBatch(HomeIntent.BatchSetNativeHook(selectedPkgs.toList(), false)) },
+                onResetOn = { runBatch(HomeIntent.BatchSetAutoReset(selectedPkgs.toList(), true)) },
+                onResetOff = { runBatch(HomeIntent.BatchSetAutoReset(selectedPkgs.toList(), false)) },
+                onApplyTemplate = {
+                    showBatchSheet = false
+                    scope.launch {
+                        val templates = viewModel.loadTemplates()
+                        if (templates.isNotEmpty()) {
+                            templatePickerItems = templates
+                            showTemplatePicker = true
+                        }
+                    }
+                },
+            )
         }
     }
 }
@@ -742,94 +761,177 @@ private fun EmptyResult(modifier: Modifier = Modifier) {
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SelectionToolbar(
-    onDeselectAll: () -> Unit,
-    onSelectAll: () -> Unit,
-    onEnableAll: () -> Unit,
-    onDisableAll: () -> Unit,
-    onResetOn: () -> Unit,
-    onResetOff: () -> Unit,
-    onApplyTemplate: () -> Unit,
+    selectedCount: Int,
+    allSelected: Boolean,
+    onExit: () -> Unit,
+    onToggleSelectAll: () -> Unit,
+    onOpenBatchActions: () -> Unit,
 ) {
     HorizontalFloatingToolbar(
         modifier = Modifier.padding(bottom = 16.dp),
         expanded = true,
         colors = vibrantFloatingToolbarColors(),
         content = {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
                     .wrapContentWidth()
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    FilledIconButton(
-                        onClick = onDeselectAll,
-                        shapes = IconButtonDefaults.shapes(),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        )
-                    ) {
-                        Icon(Icons.Default.Deselect, stringResource(R.string.toolbar_deselect_all))
-                    }
-                    FilledIconButton(
-                        onClick = onSelectAll,
-                        shapes = IconButtonDefaults.shapes(),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        )
-                    ) {
-                        Icon(Icons.Default.SelectAll, stringResource(R.string.toolbar_select_all))
-                    }
-                    FilledIconButton(
-                        onClick = onEnableAll,
-                        shapes = IconButtonDefaults.shapes(),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        )
-                    ) {
-                        Icon(Icons.Rounded.PlayArrow, stringResource(R.string.toolbar_enable_all))
-                    }
-                    FilledIconButton(
-                        onClick = onDisableAll,
-                        shapes = IconButtonDefaults.shapes(),
-                        colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                        )
-                    ) {
-                        Icon(Icons.Rounded.Stop, stringResource(R.string.toolbar_disable_all))
-                    }
+                FilledIconButton(
+                    onClick = onExit,
+                    shapes = IconButtonDefaults.shapes(),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        contentColor = contentColorFor(MaterialTheme.colorScheme.surfaceContainerHighest),
+                    )
+                ) {
+                    Icon(Icons.Filled.Close, stringResource(R.string.toolbar_deselect_all))
                 }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    FilledTonalButton(
-                        onClick = onResetOn,
-                        shapes = ButtonDefaults.shapes(),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        )
-                    ) {
-                        Text(stringResource(R.string.toolbar_reset_on))
-                    }
-                    FilledTonalButton(
-                        onClick = onResetOff,
-                        shapes = ButtonDefaults.shapes(),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        )
-                    ) {
-                        Text(stringResource(R.string.toolbar_reset_off))
-                    }
-                    FilledTonalButton(
-                        onClick = onApplyTemplate,
-                        shapes = ButtonDefaults.shapes(),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        )
-                    ) {
-                        Text(stringResource(R.string.toolbar_apply_template))
-                    }
+                FilledIconButton(
+                    onClick = onToggleSelectAll,
+                    shapes = IconButtonDefaults.shapes(),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = contentColorFor(MaterialTheme.colorScheme.primaryContainer),
+                    )
+                ) {
+                    Icon(
+                        if (allSelected) Icons.Default.Deselect else Icons.Default.SelectAll,
+                        stringResource(R.string.toolbar_select_all),
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.toolbar_selected_count, selectedCount),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+                FilledTonalButton(
+                    onClick = onOpenBatchActions,
+                    shapes = ButtonDefaults.shapes(),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = contentColorFor(MaterialTheme.colorScheme.tertiaryContainer),
+                    )
+                ) {
+                    Text(stringResource(R.string.toolbar_batch_actions))
                 }
             }
         },
     )
+}
+
+@Composable
+private fun BatchActionsSheet(
+    selectedCount: Int,
+    onJavaOn: () -> Unit,
+    onJavaOff: () -> Unit,
+    onNativeOn: () -> Unit,
+    onNativeOff: () -> Unit,
+    onResetOn: () -> Unit,
+    onResetOff: () -> Unit,
+    onApplyTemplate: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = stringResource(R.string.batch_sheet_title),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            Text(
+                text = stringResource(R.string.toolbar_selected_count, selectedCount),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        BatchToggleRow(
+            label = stringResource(R.string.batch_group_java),
+            hint = null,
+            onOn = onJavaOn,
+            onOff = onJavaOff,
+        )
+        BatchToggleRow(
+            label = stringResource(R.string.batch_group_native),
+            hint = stringResource(R.string.batch_native_hint),
+            onOn = onNativeOn,
+            onOff = onNativeOff,
+        )
+        BatchToggleRow(
+            label = stringResource(R.string.batch_group_reset),
+            hint = null,
+            onOn = onResetOn,
+            onOff = onResetOff,
+        )
+
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = stringResource(R.string.batch_group_template),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            FilledTonalButton(
+                onClick = onApplyTemplate,
+                shapes = ButtonDefaults.shapes(),
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = contentColorFor(MaterialTheme.colorScheme.primaryContainer),
+                ),
+            ) {
+                Text(stringResource(R.string.toolbar_apply_template))
+            }
+        }
+
+        Box(modifier = Modifier.navigationBarsPadding())
+    }
+}
+
+@Composable
+private fun BatchToggleRow(
+    label: String,
+    hint: String?,
+    onOn: () -> Unit,
+    onOff: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(text = label, style = MaterialTheme.typography.titleSmall)
+        if (hint != null) {
+            Text(
+                text = hint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilledTonalButton(
+                onClick = onOn,
+                shapes = ButtonDefaults.shapes(),
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = contentColorFor(MaterialTheme.colorScheme.tertiaryContainer),
+                ),
+            ) {
+                Text(stringResource(R.string.batch_on))
+            }
+            FilledTonalButton(
+                onClick = onOff,
+                shapes = ButtonDefaults.shapes(),
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = contentColorFor(MaterialTheme.colorScheme.secondaryContainer),
+                ),
+            ) {
+                Text(stringResource(R.string.batch_off))
+            }
+        }
+    }
 }

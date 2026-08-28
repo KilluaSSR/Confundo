@@ -21,6 +21,8 @@ data class AppDetailUiState(
     val packageName: String = "",
     val enabled: Boolean = false,
     val autoReset: Boolean = false,
+    val nativeHookGlobalEnabled: Boolean = false,
+    val nativeHookEnabled: Boolean = false,
     val fields: Map<String, String> = emptyMap(),
 ) : UIState
 
@@ -28,6 +30,7 @@ sealed interface AppDetailIntent : UIIntent {
     data class Load(val pkg: String) : AppDetailIntent
     data class SetEnabled(val enabled: Boolean) : AppDetailIntent
     data class SetAutoReset(val autoReset: Boolean) : AppDetailIntent
+    data class SetNativeHook(val enabled: Boolean) : AppDetailIntent
     data class UpdateField(val key: String, val value: String) : AppDetailIntent
     data object RandomFill : AppDetailIntent
 }
@@ -45,6 +48,7 @@ class AppDetailViewModel @Inject constructor(
             is AppDetailIntent.Load -> load(intent.pkg)
             is AppDetailIntent.SetEnabled -> repository.setEnabled(uiState.value.packageName, intent.enabled)
             is AppDetailIntent.SetAutoReset -> repository.setAutoReset(uiState.value.packageName, intent.autoReset)
+            is AppDetailIntent.SetNativeHook -> repository.setAppNativeHook(uiState.value.packageName, intent.enabled)
             is AppDetailIntent.UpdateField -> repository.updateField(uiState.value.packageName, intent.key, intent.value)
             AppDetailIntent.RandomFill -> {
                 repository.randomFill(uiState.value.packageName)
@@ -74,6 +78,8 @@ class AppDetailViewModel @Inject constructor(
                         appName = appName,
                         enabled = cfg.enabled,
                         autoReset = cfg.autoReset,
+                        nativeHookGlobalEnabled = repository.isNativeHookEnabled(),
+                        nativeHookEnabled = cfg.nativeHookEnabled,
                         fields = cfg.fields,
                     )
                 )
