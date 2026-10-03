@@ -137,6 +137,14 @@
     <string name="detail_item_drm_security_level">DRM 安全级别 (L1/L3)</string>
     <string name="detail_item_wifi_ssid">Wifi SSID</string>
     <string name="detail_item_wifi_mac">Wifi MAC 地址</string>
+    <string name="detail_item_hide_vpn">隐藏 VPN 开启状态</string>
+
+    <!-- Injection mode -->
+    <string name="inject_mode_title">注入模式</string>
+    <string name="inject_mode_in_app">应用内</string>
+    <string name="inject_mode_system_server">系统服务框架</string>
+    <string name="inject_mode_in_app_summary">在目标应用进程内注入，可使用全部 Java 与 Native Hook 字段。切换后需强行停止并重启目标应用。</string>
+    <string name="inject_mode_system_server_summary">目标应用进程内不加载模块；仅显示可在系统服务端按调用应用隔离的字段。需在 LSPosed 作用域勾选“系统框架”与“电话服务”(com.android.phone) 并重启设备；切换后强行停止目标应用。</string>
 
     <!-- Detail page section headers -->
     <string name="section_identity">身份标识</string>

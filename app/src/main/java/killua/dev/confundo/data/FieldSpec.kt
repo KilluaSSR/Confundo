@@ -71,6 +71,7 @@ object FieldCatalog {
         FieldSpec(FieldKeys.WIFI_BSSID, R.string.detail_item_wifi_bssid, FieldCategory.TELEPHONY, FieldInputType.Text),
         FieldSpec(FieldKeys.WIFI_SSID, R.string.detail_item_wifi_ssid, FieldCategory.TELEPHONY, FieldInputType.Text),
         FieldSpec(FieldKeys.WIFI_MAC, R.string.detail_item_wifi_mac, FieldCategory.TELEPHONY, FieldInputType.Text),
+        FieldSpec(FieldKeys.HIDE_VPN, R.string.detail_item_hide_vpn, FieldCategory.TELEPHONY, boolInput),
 
         // 系统版本
         FieldSpec(FieldKeys.ANDROID_VERSION, R.string.detail_item_android_version, FieldCategory.SYSTEM, FieldInputType.Text),

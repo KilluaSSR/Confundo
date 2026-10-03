@@ -9,6 +9,12 @@ object FieldKeys {
 
     const val NATIVE_HOOK_ENABLED = "_native_hook_enabled"
 
+    /**
+     * 注入模式。取值见 [killua.dev.confundo.data.InjectMode.storage]；
+     * 缺省为空，等价于历史的进程内注入模式。
+     */
+    const val INJECT_MODE = "_inject_mode"
+
     const val DEVICE_ID = "device_id"
     const val ANDROID_ID = "android_id"
     const val SERIAL = "serial"
@@ -28,6 +34,7 @@ object FieldKeys {
     const val WIFI_BSSID = "wifi_bssid"
     const val WIFI_SSID = "wifi_ssid"
     const val WIFI_MAC = "wifi_mac"
+    const val HIDE_VPN = "hide_vpn"
 
     // 系统版本
     const val TIMEZONE = "timezone"
