@@ -15,6 +15,7 @@ object NativeBridge {
      * @param cacheDir 目标 App 可写缓存目录；为空则跳过基于文件重定向的 hook（build.prop / proc）。
      * @param kernel 内核版本，用于 `uname` 与 `/proc/version` 伪装；为空则跳过。
      * @param vulkanDeviceName Vulkan `deviceName` 伪装值；为空则跳过 Vulkan hook。
+     * @param hideVpn 是否过滤 native 网络接口及 `/proc/net` 中的 VPN 痕迹。
      * @return 是否安装成功（含幂等返回）。
      */
     @JvmStatic
@@ -24,5 +25,6 @@ object NativeBridge {
         cacheDir: String,
         kernel: String,
         vulkanDeviceName: String,
+        hideVpn: Boolean,
     ): Boolean
 }

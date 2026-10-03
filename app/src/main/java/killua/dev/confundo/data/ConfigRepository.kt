@@ -69,6 +69,7 @@ class ConfigRepository @Inject constructor(
         val enabled: Boolean = false,
         val autoReset: Boolean = false,
         val nativeHookEnabled: Boolean = false,
+        val injectMode: InjectMode = InjectMode.IN_APP,
         val fields: Map<String, String> = emptyMap(),
     )
 
@@ -81,6 +82,9 @@ class ConfigRepository @Inject constructor(
             enabled = runCatching { p.getBoolean(FieldKeys.ENABLED, false) }.getOrDefault(false),
             autoReset = runCatching { p.getBoolean(FieldKeys.AUTO_RESET, false) }.getOrDefault(false),
             nativeHookEnabled = runCatching { p.getBoolean(FieldKeys.NATIVE_HOOK_ENABLED, false) }.getOrDefault(false),
+            injectMode = InjectMode.fromStorage(
+                runCatching { p.getString(FieldKeys.INJECT_MODE, "") }.getOrDefault("")
+            ),
             fields = fields,
         )
     }
@@ -133,6 +137,15 @@ class ConfigRepository @Inject constructor(
 
     suspend fun setAppNativeHook(pkg: String, enabled: Boolean) = write(pkg) {
         context.prefs(pkg).edit { putBoolean(FieldKeys.NATIVE_HOOK_ENABLED, enabled) }
+    }
+
+    suspend fun setInjectMode(pkg: String, mode: InjectMode) = write(pkg) {
+        context.prefs(pkg).edit {
+            putString(FieldKeys.INJECT_MODE, mode.storage)
+            if (mode == InjectMode.SYSTEM_SERVER) {
+                putBoolean(FieldKeys.NATIVE_HOOK_ENABLED, false)
+            }
+        }
     }
 
     fun isNativeHookEnabled(): Boolean = runCatching {
@@ -258,6 +271,7 @@ class ConfigRepository @Inject constructor(
             putBoolean(FieldKeys.ENABLED, config.enabled)
             putBoolean(FieldKeys.AUTO_RESET, config.autoReset)
             putBoolean(FieldKeys.NATIVE_HOOK_ENABLED, config.nativeHookEnabled)
+            putString(FieldKeys.INJECT_MODE, config.injectMode.storage)
             config.fields.forEach { (k, v) -> putString(k, v) }
         }
     }

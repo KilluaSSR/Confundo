@@ -5,6 +5,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import killua.dev.confundo.R
 import killua.dev.confundo.data.ConfigRepository
+import killua.dev.confundo.data.InjectMode
 import killua.dev.confundo.ui.viewmodel.BaseViewModel
 import killua.dev.confundo.ui.viewmodel.SnackbarUIEffect
 import killua.dev.confundo.ui.viewmodel.UIIntent
@@ -23,6 +24,7 @@ data class AppDetailUiState(
     val autoReset: Boolean = false,
     val nativeHookGlobalEnabled: Boolean = false,
     val nativeHookEnabled: Boolean = false,
+    val injectMode: InjectMode = InjectMode.IN_APP,
     val fields: Map<String, String> = emptyMap(),
 ) : UIState
 
@@ -31,6 +33,7 @@ sealed interface AppDetailIntent : UIIntent {
     data class SetEnabled(val enabled: Boolean) : AppDetailIntent
     data class SetAutoReset(val autoReset: Boolean) : AppDetailIntent
     data class SetNativeHook(val enabled: Boolean) : AppDetailIntent
+    data class SetInjectMode(val mode: InjectMode) : AppDetailIntent
     data class UpdateField(val key: String, val value: String) : AppDetailIntent
     data object RandomFill : AppDetailIntent
 }
@@ -49,6 +52,7 @@ class AppDetailViewModel @Inject constructor(
             is AppDetailIntent.SetEnabled -> repository.setEnabled(uiState.value.packageName, intent.enabled)
             is AppDetailIntent.SetAutoReset -> repository.setAutoReset(uiState.value.packageName, intent.autoReset)
             is AppDetailIntent.SetNativeHook -> repository.setAppNativeHook(uiState.value.packageName, intent.enabled)
+            is AppDetailIntent.SetInjectMode -> repository.setInjectMode(uiState.value.packageName, intent.mode)
             is AppDetailIntent.UpdateField -> repository.updateField(uiState.value.packageName, intent.key, intent.value)
             AppDetailIntent.RandomFill -> {
                 repository.randomFill(uiState.value.packageName)
@@ -80,6 +84,7 @@ class AppDetailViewModel @Inject constructor(
                         autoReset = cfg.autoReset,
                         nativeHookGlobalEnabled = repository.isNativeHookEnabled(),
                         nativeHookEnabled = cfg.nativeHookEnabled,
+                        injectMode = cfg.injectMode,
                         fields = cfg.fields,
                     )
                 )

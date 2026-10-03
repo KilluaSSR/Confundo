@@ -40,7 +40,8 @@ object NativeHooks : HookDelegate {
         val props = LinkedHashMap(BuildProps.propMap(fields)).apply {
             fields.spoof(FieldKeys.TIMEZONE)?.let { put("persist.sys.timezone", it) }
         }
-        if (props.isEmpty()) return
+        val hideVpn = fields[FieldKeys.HIDE_VPN]?.toBooleanStrictOrNull() == true
+        if (props.isEmpty() && !hideVpn) return
 
         if (!ensureLibrariesLoaded()) {
             YLog.warn("Confundo native libs not loaded, skip native spoof")
@@ -58,6 +59,7 @@ object NativeHooks : HookDelegate {
                 cacheDir = cacheDir,
                 kernel = kernel,
                 vulkanDeviceName = vulkanName,
+                hideVpn = hideVpn,
             )
         }.getOrElse {
             YLog.error("nativeInstall failed", it)

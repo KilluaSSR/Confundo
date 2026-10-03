@@ -1,6 +1,8 @@
 #include <jni.h>
 #include <android/log.h>
 #include <fcntl.h>
+#include <ifaddrs.h>
+#include <net/if.h>
 #include <sys/system_properties.h>
 #include <sys/utsname.h>
 #include <unistd.h>
@@ -27,6 +29,7 @@ std::unordered_map<std::string, std::string> g_props;
 std::string g_cache_dir;           // 目标 App 可写缓存目录，用于生成改写后的文件并重定向
 std::string g_kernel;              // 内核版本，用于 uname / /proc/version
 std::string g_vulkan_device_name;  // 与 GL_RENDERER 对齐的 Vulkan deviceName
+bool g_hide_vpn = false;
 std::atomic<bool> g_installed{false};
 
 thread_local bool tls_bypass = false;
@@ -40,6 +43,15 @@ const std::string* LookupProp(const char* name) {
     if (name == nullptr) return nullptr;
     auto it = g_props.find(name);
     return it == g_props.end() ? nullptr : &it->second;
+}
+
+bool IsVpnInterface(const char* name) {
+    if (name == nullptr) return false;
+    return strncmp(name, "tun", 3) == 0 ||
+           strncmp(name, "tap", 3) == 0 ||
+           strncmp(name, "ppp", 3) == 0 ||
+           strncmp(name, "wg", 2) == 0 ||
+           strncmp(name, "ipsec", 5) == 0;
 }
 
 void CopyStr(char* dst, const std::string& src, size_t cap) {
@@ -232,6 +244,42 @@ std::string BuildFilteredMaps(const char* path) {
     return out.str();
 }
 
+// /proc/net/{route,dev,ipv6_route,if_inet6} carry the interface name as one
+// whitespace-separated column (dev appends ':'), so match whole tokens only.
+bool LineNamesVpnInterface(const std::string& line) {
+    std::stringstream tokens(line);
+    std::string token;
+    while (tokens >> token) {
+        if (!token.empty() && token.back() == ':') token.pop_back();
+        if (IsVpnInterface(token.c_str())) return true;
+    }
+    return false;
+}
+
+std::string BuildFilteredVpnProc(const char* path) {
+    std::string content = ReadRealFile(path);
+    if (content.empty()) return {};
+    std::stringstream in(content);
+    std::stringstream out;
+    std::string line;
+    while (std::getline(in, line)) {
+        if (!LineNamesVpnInterface(line)) out << line << '\n';
+    }
+    return out.str();
+}
+
+bool IsVpnProcPath(const char* path) {
+    const char* tail = nullptr;
+    if (strncmp(path, "/proc/net/", 10) == 0) {
+        tail = path + 10;
+    } else if (strncmp(path, "/proc/self/net/", 15) == 0) {
+        tail = path + 15;
+    }
+    if (tail == nullptr) return false;
+    return strcmp(tail, "route") == 0 || strcmp(tail, "ipv6_route") == 0 ||
+           strcmp(tail, "dev") == 0 || strcmp(tail, "if_inet6") == 0;
+}
+
 int MyOpenat(int dirfd, const char* pathname, int flags, mode_t mode) {
     SHADOWHOOK_STACK_SCOPE();
     if (!tls_bypass && pathname != nullptr) {
@@ -242,6 +290,8 @@ int MyOpenat(int dirfd, const char* pathname, int flags, mode_t mode) {
             content = BuildSpoofedProcVersion();
         } else if (IsSelfMaps(pathname)) {
             content = BuildFilteredMaps(pathname);
+        } else if (g_hide_vpn && IsVpnProcPath(pathname)) {
+            content = BuildFilteredVpnProc(pathname);
         }
         if (!content.empty()) {
             int fd = MaterializeFd(content);
@@ -249,6 +299,40 @@ int MyOpenat(int dirfd, const char* pathname, int flags, mode_t mode) {
         }
     }
     return orig_openat(dirfd, pathname, flags, mode);
+}
+
+// ---- native network-interface enumeration -------------------------------
+using GetifaddrsFn = int (*)(struct ifaddrs**);
+GetifaddrsFn orig_getifaddrs = nullptr;
+
+int MyGetifaddrs(struct ifaddrs** ifap) {
+    SHADOWHOOK_STACK_SCOPE();
+    int result = orig_getifaddrs != nullptr ? orig_getifaddrs(ifap) : -1;
+    if (result != 0 || !g_hide_vpn || ifap == nullptr) return result;
+
+    // bionic frees the list node by node, so a detached node with a null
+    // ifa_next can be released on its own through freeifaddrs().
+    struct ifaddrs** link = ifap;
+    while (*link != nullptr) {
+        struct ifaddrs* item = *link;
+        if (IsVpnInterface(item->ifa_name)) {
+            *link = item->ifa_next;
+            item->ifa_next = nullptr;
+            freeifaddrs(item);
+        } else {
+            link = &item->ifa_next;
+        }
+    }
+    return result;
+}
+
+using IfNameToIndexFn = unsigned int (*)(const char*);
+IfNameToIndexFn orig_if_nametoindex = nullptr;
+
+unsigned int MyIfNameToIndex(const char* name) {
+    SHADOWHOOK_STACK_SCOPE();
+    if (g_hide_vpn && IsVpnInterface(name)) return 0;
+    return orig_if_nametoindex != nullptr ? orig_if_nametoindex(name) : 0;
 }
 
 // ---- Vulkan deviceName ----------------------------------------------------
@@ -298,6 +382,14 @@ void InstallHooks() {
     HookSym("libc.so", "openat",
             reinterpret_cast<void*>(MyOpenat),
             reinterpret_cast<void**>(&orig_openat));
+    if (g_hide_vpn) {
+        HookSym("libc.so", "getifaddrs",
+                reinterpret_cast<void*>(MyGetifaddrs),
+                reinterpret_cast<void**>(&orig_getifaddrs));
+        HookSym("libc.so", "if_nametoindex",
+                reinterpret_cast<void*>(MyIfNameToIndex),
+                reinterpret_cast<void**>(&orig_if_nametoindex));
+    }
 
     if (!g_vulkan_device_name.empty()) {
         HookSym("libvulkan.so", "vkGetPhysicalDeviceProperties",
@@ -331,7 +423,8 @@ extern "C" JNIEXPORT jboolean JNICALL
 Java_killua_dev_confundo_hooks_NativeBridge_nativeInstall(
         JNIEnv* env, jclass /*clazz*/,
         jobjectArray keys, jobjectArray values,
-        jstring cacheDir, jstring kernel, jstring vulkanDeviceName) {
+        jstring cacheDir, jstring kernel, jstring vulkanDeviceName,
+        jboolean hideVpn) {
     bool expected = false;
     if (!g_installed.compare_exchange_strong(expected, true)) {
         return JNI_TRUE;  // 已安装，幂等返回。
@@ -340,6 +433,7 @@ Java_killua_dev_confundo_hooks_NativeBridge_nativeInstall(
     g_cache_dir = JStringToStd(env, cacheDir);
     g_kernel = JStringToStd(env, kernel);
     g_vulkan_device_name = JStringToStd(env, vulkanDeviceName);
+    g_hide_vpn = hideVpn == JNI_TRUE;
 
     jsize count = keys != nullptr ? env->GetArrayLength(keys) : 0;
     for (jsize i = 0; i < count; ++i) {

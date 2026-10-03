@@ -4,6 +4,7 @@ import com.highcapable.yukihookapi.annotation.xposed.InjectYukiHookWithXposed
 import com.highcapable.yukihookapi.hook.factory.encase
 import com.highcapable.yukihookapi.hook.log.YLog
 import com.highcapable.yukihookapi.hook.xposed.proxy.IYukiHookXposedInit
+import killua.dev.confundo.data.InjectMode
 import killua.dev.confundo.hooks.delegates.ActivationTimeHooks
 import killua.dev.confundo.hooks.delegates.BatteryHooks
 import killua.dev.confundo.hooks.delegates.BuildHooks
@@ -15,23 +16,47 @@ import killua.dev.confundo.hooks.delegates.MediaDrmHooks
 import killua.dev.confundo.hooks.delegates.NativeHooks
 import killua.dev.confundo.hooks.delegates.NetworkHooks
 import killua.dev.confundo.hooks.delegates.OpenGLHooks
+import killua.dev.confundo.hooks.delegates.PhoneProcessHooks
 import killua.dev.confundo.hooks.delegates.SensorHooks
 import killua.dev.confundo.hooks.delegates.SettingsHooks
 import killua.dev.confundo.hooks.delegates.SystemHooks
 import killua.dev.confundo.hooks.delegates.SystemPropertiesHooks
+import killua.dev.confundo.hooks.delegates.SystemServerHooks
 import killua.dev.confundo.hooks.delegates.TelephonyHooks
+import killua.dev.confundo.hooks.delegates.VpnHooks
 import killua.dev.confundo.ui.pages.home.FieldKeys
 
 @InjectYukiHookWithXposed
 object HookEntry : IYukiHookXposedInit {
+
+    private const val PHONE_PACKAGE = "com.android.phone"
+
     override fun onHook() = encase {
+        loadSystem {
+            runCatching {
+                with(SystemServerHooks) { apply(emptyMap()) }
+            }.onFailure { YLog.error("SystemServerHooks failed", it) }
+        }
+
         loadApp(isExcludeSelf = true) {
             val pkg = packageName
+
+            if (pkg == PHONE_PACKAGE) {
+                runCatching {
+                    with(PhoneProcessHooks) { apply(emptyMap()) }
+                }.onFailure { YLog.error("PhoneProcessHooks failed", it) }
+                return@loadApp
+            }
 
             val enabled = runCatching {
                 prefs(pkg).getBoolean(FieldKeys.ENABLED, false)
             }.getOrDefault(false)
             if (!enabled) return@loadApp
+
+            val injectMode = InjectMode.fromStorage(
+                runCatching { prefs(pkg).getString(FieldKeys.INJECT_MODE, "") }.getOrDefault("")
+            )
+            if (injectMode == InjectMode.SYSTEM_SERVER) return@loadApp
 
             val fields = FieldKeys.fieldEntries.associate { (key, _) ->
                 key to runCatching { prefs(pkg).getString(key, "") }.getOrDefault("")
@@ -77,6 +102,7 @@ object HookEntry : IYukiHookXposedInit {
 
     private val delegates = listOf(
         NativeHooks,
+        VpnHooks,
         BuildHooks,
         SystemPropertiesHooks,
         SystemHooks,

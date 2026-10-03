@@ -36,6 +36,17 @@ object SettingsHooks : HookDelegate {
                 }
             } catch (_: NoSuchMethodError) {}
 
+            runCatching {
+                injectMember {
+                    method { name = "getStringForUser" }.all()
+                    beforeHook {
+                        val settingName = args.getOrNull(1) as? String ?: return@beforeHook
+                        val fieldKey = keys[settingName] ?: return@beforeHook
+                        resolveStringValue(settingName, fieldKey, fields)?.let { result = it }
+                    }
+                }
+            }
+
             listOf(2, 3).forEach { count ->
                 try {
                     injectMember {

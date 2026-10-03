@@ -1,6 +1,7 @@
 package killua.dev.confundo.ui.pages.home
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -31,6 +33,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -54,6 +59,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import killua.dev.confundo.R
 import killua.dev.confundo.data.FieldCatalog
 import killua.dev.confundo.data.FieldSpec
+import killua.dev.confundo.data.InjectMode
+import killua.dev.confundo.data.SystemServerFields
 import killua.dev.confundo.ui.components.AppDetailItem
 import killua.dev.confundo.ui.components.AppPosition
 import killua.dev.confundo.ui.components.CardSwitch
@@ -202,8 +209,18 @@ fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) 
                             shape = animatedGroupedShape(AppPosition.Bottom, false, Dimens.ListCorner),
                         )
 
+                        Spacer(modifier = Modifier.height(8.dp))
+                        InjectModeCard(
+                            mode = state.injectMode,
+                            enabled = state.enabled,
+                            onModeChange = { viewModel.emitIntentOnIO(AppDetailIntent.SetInjectMode(it)) },
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                        )
+
                         AnimatedVisibility(
-                            visible = state.nativeHookGlobalEnabled && state.enabled,
+                            visible = state.nativeHookGlobalEnabled &&
+                                state.enabled &&
+                                state.injectMode == InjectMode.IN_APP,
                             enter = fadeIn() + expandVertically(),
                             exit = fadeOut() + shrinkVertically(),
                         ) {
@@ -235,34 +252,48 @@ fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) 
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
-                        FieldCatalog.grouped.forEach { (category, specs) ->
-                            SectionHeader(title = stringResource(category.titleRes))
-                            Column(
-                                modifier = Modifier.padding(horizontal = Spacing.lg),
-                                verticalArrangement = Arrangement.spacedBy(Spacing.xxs),
-                            ) {
-                                specs.forEachIndexed { index, spec ->
-                                    val title = stringResource(spec.labelRes)
-                                    val position = when {
-                                        specs.size == 1 -> AppPosition.Single
-                                        index == 0 -> AppPosition.Top
-                                        index == specs.lastIndex -> AppPosition.Bottom
-                                        else -> AppPosition.Middle
+                        AnimatedContent(
+                            targetState = state.injectMode,
+                            label = "inject-mode-fields",
+                        ) { mode ->
+                            Column {
+                                FieldCatalog.grouped.forEach { (category, allSpecs) ->
+                                    val specs = if (mode == InjectMode.SYSTEM_SERVER) {
+                                        allSpecs.filter { SystemServerFields.supports(it.key) }
+                                    } else {
+                                        allSpecs
                                     }
-                                    Surface(
-                                        shape = animatedGroupedShape(position, false, Dimens.ListCorner),
-                                        color = MaterialTheme.colorScheme.surfaceBright,
+                                    if (specs.isEmpty()) return@forEach
+
+                                    SectionHeader(title = stringResource(category.titleRes))
+                                    Column(
+                                        modifier = Modifier.padding(horizontal = Spacing.lg),
+                                        verticalArrangement = Arrangement.spacedBy(Spacing.xxs),
                                     ) {
-                                        AppDetailItem(
-                                            title = title,
-                                            content = state.fields[spec.key] ?: "",
-                                            enabled = state.enabled,
-                                            onClick = {
-                                                editingSpec = spec
-                                                editingTitle = title
-                                                editingValue = state.fields[spec.key] ?: ""
+                                        specs.forEachIndexed { index, spec ->
+                                            val title = stringResource(spec.labelRes)
+                                            val position = when {
+                                                specs.size == 1 -> AppPosition.Single
+                                                index == 0 -> AppPosition.Top
+                                                index == specs.lastIndex -> AppPosition.Bottom
+                                                else -> AppPosition.Middle
                                             }
-                                        )
+                                            Surface(
+                                                shape = animatedGroupedShape(position, false, Dimens.ListCorner),
+                                                color = MaterialTheme.colorScheme.surfaceBright,
+                                            ) {
+                                                AppDetailItem(
+                                                    title = title,
+                                                    content = state.fields[spec.key] ?: "",
+                                                    enabled = state.enabled,
+                                                    onClick = {
+                                                        editingSpec = spec
+                                                        editingTitle = title
+                                                        editingValue = state.fields[spec.key] ?: ""
+                                                    }
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -285,4 +316,47 @@ fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) 
         },
         onDismiss = { editingSpec = null }
     )
+}
+
+@Composable
+private fun InjectModeCard(
+    mode: InjectMode,
+    enabled: Boolean,
+    onModeChange: (InjectMode) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = animatedGroupedShape(AppPosition.Single, false, Dimens.ListCorner),
+        color = MaterialTheme.colorScheme.surfaceBright,
+    ) {
+        Column(modifier = Modifier.padding(Spacing.lg)) {
+            Text(
+                text = stringResource(R.string.inject_mode_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.height(Spacing.sm))
+            val modes = InjectMode.entries
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                modes.forEachIndexed { index, option ->
+                    SegmentedButton(
+                        selected = mode == option,
+                        onClick = { onModeChange(option) },
+                        enabled = enabled,
+                        shape = SegmentedButtonDefaults.itemShape(index, modes.size),
+                    ) {
+                        Text(stringResource(option.labelRes))
+                    }
+                }
+            }
+            Spacer(Modifier.height(Spacing.sm))
+            AnimatedContent(targetState = mode, label = "inject-mode-summary") { current ->
+                Text(
+                    text = stringResource(current.summaryRes),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
 }
