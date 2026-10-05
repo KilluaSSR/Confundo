@@ -40,6 +40,9 @@
     <string name="switch_enable">启用</string>
     <string name="switch_auto_reset">受自动重置影响</string>
     <string name="menu_random_fill">随机填充</string>
+    <string name="menu_copy_from_app">模版</string>
+    <string name="template_pick_title">选择来源应用</string>
+    <string name="template_pick_empty">没有已配置伪装数据的应用</string>
     <string name="detail_item_device_id">DeviceID</string>
     <string name="detail_item_android_id">AndroidID</string>
     <string name="detail_item_network_country">网络国家</string>

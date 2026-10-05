@@ -9,7 +9,9 @@ object Routes {
     const val APP_DETAIL = "app_detail/{pkg}"
     const val TEMPLATE_MANAGE = "template_manage"
     const val TEMPLATE_DETAIL = "template_detail/{templateId}"
+    const val COPY_SOURCE = "copy_source/{pkg}"
 
     fun appDetail(pkg: String) = "app_detail/${Uri.encode(pkg)}"
     fun templateDetail(templateId: String) = "template_detail/${Uri.encode(templateId)}"
+    fun copySource(pkg: String) = "copy_source/${Uri.encode(pkg)}"
 }

@@ -24,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,6 +62,7 @@ import killua.dev.confundo.data.FieldCatalog
 import killua.dev.confundo.data.FieldSpec
 import killua.dev.confundo.data.InjectMode
 import killua.dev.confundo.data.SystemServerFields
+import killua.dev.confundo.navigation.Routes
 import killua.dev.confundo.ui.components.AppDetailItem
 import killua.dev.confundo.ui.components.AppPosition
 import killua.dev.confundo.ui.components.CardSwitch
@@ -130,6 +132,10 @@ fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) 
                     )
                 },
                 scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
                 navigationIcon = {
                     IconButton(
                         onClick = { navController.popBackStack() },
@@ -142,6 +148,15 @@ fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) 
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = { navController.navigate(Routes.copySource(pkg)) },
+                        shapes = IconButtonDefaults.shapes(),
+                    ) {
+                        Icon(
+                            Icons.Filled.ContentCopy,
+                            contentDescription = stringResource(R.string.menu_copy_from_app)
+                        )
+                    }
                     IconButton(
                         onClick = { viewModel.emitIntentOnIO(AppDetailIntent.RandomFill) },
                         shapes = IconButtonDefaults.shapes(),

@@ -194,6 +194,28 @@ class ConfigRepository @Inject constructor(
         }
     }
 
+    suspend fun packagesWithFieldData(exclude: String): List<String> = withContext(Dispatchers.IO) {
+        val pm = context.packageManager
+        val pkgs = runCatching {
+            pm.getInstalledApplications(PackageManager.GET_META_DATA).map { it.packageName }
+        }.getOrDefault(emptyList())
+            .filter { it != context.packageName && it != exclude }
+
+        pkgs.filter { pkg ->
+            FieldKeys.fieldEntries.any { (key, _) ->
+                runCatching { context.prefs(pkg).getString(key, "") }.getOrDefault("").isNotBlank()
+            }
+        }
+    }
+
+    suspend fun copyFieldsFrom(targetPkg: String, sourcePkg: String) = write(targetPkg) {
+        val source = readAppConfig(sourcePkg)
+        context.prefs(targetPkg).edit {
+            putBoolean(FieldKeys.ENABLED, true)
+            source.fields.forEach { (k, v) -> putString(k, v) }
+        }
+    }
+
     /** 将某模板的字段应用到指定 App。 */
     suspend fun applyTemplate(pkg: String, templateId: String) = write(pkg) {
         val tplFields = readTemplateFields(templateId)

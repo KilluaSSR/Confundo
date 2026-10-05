@@ -42,6 +42,7 @@ import killua.dev.confundo.navigation.Routes
 import killua.dev.confundo.navigation.TabEnterTransition
 import killua.dev.confundo.navigation.TabExitTransition
 import killua.dev.confundo.ui.pages.home.AppDetailPage
+import killua.dev.confundo.ui.pages.home.CopySourcePage
 import killua.dev.confundo.ui.pages.home.HomePage
 import killua.dev.confundo.ui.pages.home.SettingsIntent
 import killua.dev.confundo.ui.pages.home.SettingsPage
@@ -118,6 +119,13 @@ private fun MainScreen() {
             arguments = listOf(navArgument("templateId") { type = NavType.StringType })
         ) { backStackEntry ->
             TemplateDetailPage(backStackEntry.arguments?.getString("templateId") ?: "new")
+        }
+
+        composable(
+            route = Routes.COPY_SOURCE,
+            arguments = listOf(navArgument("pkg") { type = NavType.StringType })
+        ) { backStackEntry ->
+            CopySourcePage(backStackEntry.arguments?.getString("pkg") ?: "")
         }
     }
 }
