@@ -1,48 +1,44 @@
 package killua.dev.confundo.ui.pages.home
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Deselect
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material3.AlertDialog
@@ -60,19 +56,13 @@ import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.FloatingToolbarDefaults.vibrantFloatingToolbarColors
 import androidx.compose.material3.HorizontalFloatingToolbar
-import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBar
-import androidx.compose.material3.SearchBarDefaults
-import androidx.compose.material3.SearchBarState
-import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -82,9 +72,11 @@ import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -106,6 +98,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import killua.dev.arsenal.material.components.application.ArsenalSearchBar
+import killua.dev.arsenal.material.components.application.SearchExpansionMode
 import killua.dev.confundo.R
 import killua.dev.confundo.navigation.Routes
 import killua.dev.confundo.ui.components.AppItemData
@@ -217,14 +211,14 @@ fun HomePage(viewModel: HomeViewModel = hiltViewModel()) {
                 HomePhase.Loading -> PageLoadingIndicator()
                 HomePhase.Ready -> {
                     Column(Modifier.fillMaxSize()) {
-                        HomeSearchBar(
+                        ArsenalSearchBar(
                             textFieldState = textFieldState,
                             searchBarState = searchBarState,
-                            results = visibleApps,
-                            icons = state.icons,
-                            onResultClick = { pkg ->
-                                navController.navigate(Routes.appDetail(pkg))
-                            },
+                            expansionMode = SearchExpansionMode.FullScreen,
+                            placeholder = stringResource(R.string.search_hint),
+                            clearContentDescription = stringResource(R.string.cd_search_clear),
+                            searchContentDescription = stringResource(R.string.cd_search),
+                            backContentDescription = stringResource(R.string.cd_back),
                             modifier = Modifier
                                 .align(Alignment.CenterHorizontally)
                                 .widthIn(max = Dimens.ContentMaxWidth)
@@ -233,6 +227,16 @@ fun HomePage(viewModel: HomeViewModel = hiltViewModel()) {
                                     WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
                                 )
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
+                            expandedContent = {
+                                SearchResults(
+                                    results = visibleApps,
+                                    icons = state.icons,
+                                    onResultClick = { pkg ->
+                                        scope.launch { searchBarState.animateToCollapsed() }
+                                        navController.navigate(Routes.appDetail(pkg))
+                                    },
+                                )
+                            }
                         )
 
                         FilterSortRow(
@@ -538,68 +542,6 @@ fun HomePage(viewModel: HomeViewModel = hiltViewModel()) {
         }
     }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HomeSearchBar(
-    textFieldState: TextFieldState,
-    searchBarState: SearchBarState,
-    results: List<AppListItem>,
-    icons: Map<String, ImageBitmap?>,
-    onResultClick: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val scope = rememberCoroutineScope()
-
-    val inputField = @Composable {
-        SearchBarDefaults.InputField(
-            textFieldState = textFieldState,
-            searchBarState = searchBarState,
-            onSearch = { scope.launch { searchBarState.animateToCollapsed() } },
-            placeholder = { Text(stringResource(R.string.search_hint)) },
-            leadingIcon = {
-                Icon(
-                    Icons.Filled.Search,
-                    contentDescription = stringResource(R.string.cd_search),
-                )
-            },
-            trailingIcon = {
-                if (textFieldState.text.isNotEmpty()) {
-                    IconButton(
-                        onClick = { textFieldState.clearText() },
-                        shapes = IconButtonDefaults.shapes(),
-                    ) {
-                        Icon(
-                            Icons.Filled.Clear,
-                            contentDescription = stringResource(R.string.cd_search_clear),
-                        )
-                    }
-                }
-            },
-        )
-    }
-
-    SearchBar(
-        state = searchBarState,
-        inputField = inputField,
-        modifier = modifier,
-    )
-
-    ExpandedFullScreenSearchBar(
-        state = searchBarState,
-        inputField = inputField,
-    ) {
-        SearchResults(
-            results = results,
-            icons = icons,
-            onResultClick = { pkg ->
-                scope.launch { searchBarState.animateToCollapsed() }
-                onResultClick(pkg)
-            },
-        )
-    }
-}
-
 @Composable
 private fun SearchResults(
     results: List<AppListItem>,

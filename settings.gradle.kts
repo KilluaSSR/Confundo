@@ -26,4 +26,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Confundo"
 include(":app")
- 
+includeBuild("/Users/killuadev/Dev/Killua/ArsenalDevKit")

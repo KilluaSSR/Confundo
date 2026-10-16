@@ -86,6 +86,20 @@ android {
 }
 
 dependencies {
+    implementation(libs.arsenal.core)
+    implementation(libs.arsenal.logging)
+    implementation(libs.arsenal.spi)
+    implementation(libs.arsenal.data)
+    implementation(libs.arsenal.navigation)
+    implementation(libs.arsenal.navigation.annotations)
+    implementation(libs.arsenal.error)
+    implementation(libs.arsenal.material)
+    implementation(libs.arsenal.permission)
+    implementation(libs.arsenal.update)
+    implementation(libs.arsenal.utils)
+    ksp(libs.arsenal.navigation.processor)
+    ksp(libs.arsenal.spi.processor)
+    ksp(libs.arsenal.gate.processor)
     implementation(libs.yukihookapi.api)
     compileOnly(libs.xposed.api)
     ksp(libs.yukihookapi.ksp.xposed)
