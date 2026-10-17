@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import com.highcapable.yukihookapi.hook.factory.prefs
 import dagger.hilt.android.qualifiers.ApplicationContext
+import killua.dev.arsenal.data.settings.SettingsStore
 import killua.dev.confundo.ui.pages.home.FieldKeys
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
@@ -24,7 +25,7 @@ import javax.inject.Singleton
 @Singleton
 class ConfigRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val settingsRepository: SettingsRepository,
+    private val settingsStore: SettingsStore,
 ) {
 
     companion object {
@@ -171,9 +172,11 @@ class ConfigRepository @Inject constructor(
 
     /** 用一套随机值覆盖该 App 的所有字段，并强制启用。 */
     suspend fun randomFill(pkg: String) {
-        val s = settingsRepository.current()
         write(pkg) {
-            val values = randomFields(s.randomizeActivationTime, s.randomizeBootTime)
+            val values = randomFields(
+                settingsStore.get(ConfundoSettings.randomizeActivationTime),
+                settingsStore.get(ConfundoSettings.randomizeBootTime),
+            )
             context.prefs(pkg).edit {
                 putBoolean(FieldKeys.ENABLED, true)
                 values.forEach { (k, v) -> putString(k, v) }
@@ -183,9 +186,11 @@ class ConfigRepository @Inject constructor(
 
     /** 一键应用：对目标 App 启用并随机填充。 */
     suspend fun applyRandom(pkg: String, autoReset: Boolean) {
-        val s = settingsRepository.current()
         write(pkg) {
-            val values = randomFields(s.randomizeActivationTime, s.randomizeBootTime)
+            val values = randomFields(
+                settingsStore.get(ConfundoSettings.randomizeActivationTime),
+                settingsStore.get(ConfundoSettings.randomizeBootTime),
+            )
             context.prefs(pkg).edit {
                 putBoolean(FieldKeys.ENABLED, true)
                 putBoolean(FieldKeys.AUTO_RESET, autoReset)
@@ -227,10 +232,12 @@ class ConfigRepository @Inject constructor(
     }
 
     suspend fun reshuffleFilledFields(pkg: String) {
-        val s = settingsRepository.current()
         write(pkg) {
             val current = readAppConfig(pkg)
-            val fresh = randomFields(s.randomizeActivationTime, s.randomizeBootTime)
+            val fresh = randomFields(
+                settingsStore.get(ConfundoSettings.randomizeActivationTime),
+                settingsStore.get(ConfundoSettings.randomizeBootTime),
+            )
             context.prefs(pkg).edit {
                 current.fields.forEach { (key, oldValue) ->
                     if (oldValue.isNotBlank()) {
@@ -416,9 +423,11 @@ class ConfigRepository @Inject constructor(
     }
 
     suspend fun randomFillTemplate(id: String) {
-        val s = settingsRepository.current()
         writeTemplates(listOf(templatePrefs(id))) {
-            val values = randomFields(s.randomizeActivationTime, s.randomizeBootTime)
+            val values = randomFields(
+                settingsStore.get(ConfundoSettings.randomizeActivationTime),
+                settingsStore.get(ConfundoSettings.randomizeBootTime),
+            )
             context.prefs(templatePrefs(id)).edit {
                 values.forEach { (k, v) -> putString(k, v) }
             }

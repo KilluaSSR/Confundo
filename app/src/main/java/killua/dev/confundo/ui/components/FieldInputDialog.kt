@@ -21,7 +21,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import killua.dev.arsenal.material.templates.settings.SettingsSwitch
 import killua.dev.confundo.R
 import killua.dev.confundo.data.FieldInputType
 import killua.dev.confundo.data.FieldSpec
@@ -199,14 +199,11 @@ private fun BooleanDialog(
 ) {
     var checked by remember(title) { mutableStateOf(initialValue.toBooleanStrictOrNull() ?: false) }
     BaseDialog(title, onDismiss, { onConfirm(checked.toString()) }) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(if (checked) "true" else "false")
-            Switch(checked = checked, onCheckedChange = { checked = it })
-        }
+        SettingsSwitch(
+            title = if (checked) "true" else "false",
+            checked = checked,
+            onCheckedChange = { checked = it },
+        )
     }
 }
 
