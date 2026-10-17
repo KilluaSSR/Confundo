@@ -5,6 +5,7 @@ import com.highcapable.yukihookapi.hook.param.PackageParam
 import killua.dev.confundo.hooks.BuildProps
 import killua.dev.confundo.hooks.HookDelegate
 import killua.dev.confundo.hooks.NativeBridge
+import killua.dev.confundo.hooks.delegates.NativeHooks.loadOrder
 import killua.dev.confundo.hooks.spoof
 import killua.dev.confundo.ui.pages.home.FieldKeys
 import java.io.File

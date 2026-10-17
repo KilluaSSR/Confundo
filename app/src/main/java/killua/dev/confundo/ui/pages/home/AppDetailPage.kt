@@ -1,12 +1,11 @@
 package killua.dev.confundo.ui.pages.home
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -23,7 +22,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
@@ -33,16 +31,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,31 +44,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavBackStackEntry
+import killua.dev.arsenal.material.templates.basics.LoadingView
+import killua.dev.arsenal.material.templates.settings.SettingsItem
+import killua.dev.arsenal.material.templates.settings.SettingsSwitch
+import killua.dev.arsenal.navigation.annotation.NavDestination
 import killua.dev.confundo.R
 import killua.dev.confundo.data.FieldCatalog
 import killua.dev.confundo.data.FieldSpec
 import killua.dev.confundo.data.InjectMode
 import killua.dev.confundo.data.SystemServerFields
-import killua.dev.confundo.navigation.Routes
-import killua.dev.confundo.ui.components.AppDetailItem
-import killua.dev.confundo.ui.components.AppPosition
-import killua.dev.confundo.ui.components.CardSwitch
+import killua.dev.confundo.ui.components.ConfundoSurfaces
+import killua.dev.confundo.ui.components.DetailScaffold
 import killua.dev.confundo.ui.components.FieldInputDialog
 import killua.dev.confundo.ui.components.Highlight
 import killua.dev.confundo.ui.components.HighlightType
-import killua.dev.confundo.ui.components.ObserveSnackbarEffects
-import killua.dev.confundo.ui.components.PageLoadingIndicator
-import killua.dev.confundo.ui.components.SectionHeader
-import killua.dev.confundo.ui.components.animatedGroupedShape
+import killua.dev.confundo.ui.components.RowGroup
 import killua.dev.confundo.ui.theme.Dimens
 import killua.dev.confundo.ui.theme.Spacing
-import killua.dev.confundo.utils.LocalNavController
 
 // 高风险应用：为其伪装指纹可能导致账号异常/封禁（见 README 特别提醒）。
 private val HighRiskPackages = setOf(
@@ -102,73 +92,43 @@ private val NativeHookRiskPackages = setOf(
 )
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@NavDestination(route = "app_detail/{pkg}")
 @Composable
-fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) {
-    val navController = LocalNavController.current!!
+fun AppDetailPage(backStackEntry: NavBackStackEntry) {
+    val viewModel: AppDetailViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val pkg = backStackEntry.arguments?.getString("pkg") ?: ""
 
-    LaunchedEffect(pkg) { viewModel.emitIntentOnIO(AppDetailIntent.Load(pkg)) }
+    LaunchedEffect(pkg) { viewModel.dispatch(AppDetailIntent.Load(pkg)) }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    ObserveSnackbarEffects(viewModel.effects, snackbarHostState)
 
     var editingSpec by remember { mutableStateOf<FieldSpec?>(null) }
     var editingTitle by remember { mutableStateOf("") }
     var editingValue by remember { mutableStateOf("") }
 
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        state.appName.ifEmpty { pkg },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ),
-                navigationIcon = {
-                    IconButton(
-                        onClick = { navController.popBackStack() },
-                        shapes = IconButtonDefaults.shapes(),
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back)
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { navController.navigate(Routes.copySource(pkg)) },
-                        shapes = IconButtonDefaults.shapes(),
-                    ) {
-                        Icon(
-                            Icons.Filled.ContentCopy,
-                            contentDescription = stringResource(R.string.menu_copy_from_app)
-                        )
-                    }
-                    IconButton(
-                        onClick = { viewModel.emitIntentOnIO(AppDetailIntent.RandomFill) },
-                        shapes = IconButtonDefaults.shapes(),
-                    ) {
-                        Icon(
-                            Icons.Filled.Refresh,
-                            contentDescription = stringResource(R.string.menu_random_fill)
-                        )
-                    }
-                },
-            )
-        }
+    DetailScaffold(
+        title = state.appName.ifEmpty { pkg },
+        onBack = { viewModel.dispatch(AppDetailIntent.Back) },
+        actions = {
+            IconButton(
+                onClick = { viewModel.dispatch(AppDetailIntent.OpenCopySource) },
+                shapes = IconButtonDefaults.shapes(),
+            ) {
+                Icon(
+                    Icons.Filled.ContentCopy,
+                    contentDescription = stringResource(R.string.menu_copy_from_app),
+                )
+            }
+            IconButton(
+                onClick = { viewModel.dispatch(AppDetailIntent.RandomFill) },
+                shapes = IconButtonDefaults.shapes(),
+            ) {
+                Icon(
+                    Icons.Filled.Refresh,
+                    contentDescription = stringResource(R.string.menu_random_fill),
+                )
+            }
+        },
     ) { padding ->
         Box(
             Modifier
@@ -176,7 +136,7 @@ fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) 
                 .padding(padding)
         ) {
             when (state.phase) {
-                DetailPhase.Loading -> PageLoadingIndicator()
+                DetailPhase.Loading -> LoadingView()
                 DetailPhase.Ready -> {
                     Column(
                         modifier = Modifier
@@ -186,6 +146,7 @@ fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) 
                             .windowInsetsPadding(
                                 WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
                             )
+                            .padding(horizontal = Spacing.lg)
                             .align(Alignment.TopCenter)
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -196,40 +157,45 @@ fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) 
                                 icon = Icons.Filled.Warning,
                                 title = stringResource(R.string.warning_high_risk_title),
                                 text = stringResource(R.string.warning_high_risk_message),
-                                modifier = Modifier.padding(horizontal = 16.dp),
+                                modifier = Modifier.fillMaxWidth(),
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
 
-                        CardSwitch(
-                            text = stringResource(R.string.switch_enable),
-                            checked = state.enabled,
-                            onCheckedChange = { viewModel.emitIntentOnIO(AppDetailIntent.SetEnabled(it)) },
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            containerColor = MaterialTheme.colorScheme.surfaceBright,
-                            shape = animatedGroupedShape(AppPosition.Top, false, Dimens.ListCorner),
-                        )
-
-                        Spacer(modifier = Modifier.height(Spacing.xxs))
-
-                        CardSwitch(
-                            text = stringResource(R.string.switch_auto_reset),
-                            checked = state.autoReset,
-                            onCheckedChange = if (state.enabled) {
-                                { viewModel.emitIntentOnIO(AppDetailIntent.SetAutoReset(it)) }
-                            } else null,
-                            enabled = state.enabled,
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            containerColor = MaterialTheme.colorScheme.surfaceBright,
-                            shape = animatedGroupedShape(AppPosition.Bottom, false, Dimens.ListCorner),
+                        RowGroup(
+                            rows = listOf(
+                                { slot ->
+                                    SettingsSwitch(
+                                        title = stringResource(R.string.switch_enable),
+                                        checked = state.enabled,
+                                        onCheckedChange = {
+                                            viewModel.dispatch(AppDetailIntent.SetEnabled(it))
+                                        },
+                                        shape = slot.shape,
+                                        containerColor = slot.color,
+                                    )
+                                },
+                                { slot ->
+                                    SettingsSwitch(
+                                        title = stringResource(R.string.switch_auto_reset),
+                                        checked = state.autoReset,
+                                        onCheckedChange = {
+                                            viewModel.dispatch(AppDetailIntent.SetAutoReset(it))
+                                        },
+                                        enabled = state.enabled,
+                                        shape = slot.shape,
+                                        containerColor = slot.color,
+                                    )
+                                },
+                            ),
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
                         InjectModeCard(
                             mode = state.injectMode,
                             enabled = state.enabled,
-                            onModeChange = { viewModel.emitIntentOnIO(AppDetailIntent.SetInjectMode(it)) },
-                            modifier = Modifier.padding(horizontal = 16.dp),
+                            onModeChange = { viewModel.dispatch(AppDetailIntent.SetInjectMode(it)) },
+                            modifier = Modifier.fillMaxWidth(),
                         )
 
                         AnimatedVisibility(
@@ -248,20 +214,27 @@ fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) 
                                         icon = Icons.Filled.Warning,
                                         title = stringResource(R.string.warning_native_hook_risk_title),
                                         text = stringResource(R.string.warning_native_hook_risk_message),
-                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        modifier = Modifier.fillMaxWidth(),
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
 
-                                CardSwitch(
-                                    text = stringResource(R.string.switch_native_hook),
-                                    checked = state.nativeHookEnabled,
-                                    onCheckedChange = {
-                                        viewModel.emitIntentOnIO(AppDetailIntent.SetNativeHook(it))
-                                    },
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    containerColor = MaterialTheme.colorScheme.surfaceBright,
-                                    shape = animatedGroupedShape(AppPosition.Single, false, Dimens.ListCorner),
+                                RowGroup(
+                                    rows = listOf(
+                                        { slot ->
+                                            SettingsSwitch(
+                                                title = stringResource(R.string.switch_native_hook),
+                                                checked = state.nativeHookEnabled,
+                                                onCheckedChange = {
+                                                    viewModel.dispatch(
+                                                        AppDetailIntent.SetNativeHook(it)
+                                                    )
+                                                },
+                                                shape = slot.shape,
+                                                containerColor = slot.color,
+                                            )
+                                        },
+                                    ),
                                 )
                             }
                         }
@@ -280,36 +253,26 @@ fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) 
                                     }
                                     if (specs.isEmpty()) return@forEach
 
-                                    SectionHeader(title = stringResource(category.titleRes))
-                                    Column(
-                                        modifier = Modifier.padding(horizontal = Spacing.lg),
-                                        verticalArrangement = Arrangement.spacedBy(Spacing.xxs),
-                                    ) {
-                                        specs.forEachIndexed { index, spec ->
-                                            val title = stringResource(spec.labelRes)
-                                            val position = when {
-                                                specs.size == 1 -> AppPosition.Single
-                                                index == 0 -> AppPosition.Top
-                                                index == specs.lastIndex -> AppPosition.Bottom
-                                                else -> AppPosition.Middle
-                                            }
-                                            Surface(
-                                                shape = animatedGroupedShape(position, false, Dimens.ListCorner),
-                                                color = MaterialTheme.colorScheme.surfaceBright,
-                                            ) {
-                                                AppDetailItem(
+                                    RowGroup(
+                                        title = stringResource(category.titleRes),
+                                        rows = specs.map { spec ->
+                                            { slot ->
+                                                val title = stringResource(spec.labelRes)
+                                                SettingsItem(
                                                     title = title,
-                                                    content = state.fields[spec.key] ?: "",
-                                                    enabled = state.enabled,
+                                                    value = state.fields[spec.key] ?: "",
                                                     onClick = {
                                                         editingSpec = spec
                                                         editingTitle = title
                                                         editingValue = state.fields[spec.key] ?: ""
-                                                    }
+                                                    },
+                                                    enabled = state.enabled,
+                                                    shape = slot.shape,
+                                                    containerColor = slot.color,
                                                 )
                                             }
-                                        }
-                                    }
+                                        },
+                                    )
                                 }
                             }
                         }
@@ -326,7 +289,7 @@ fun AppDetailPage(pkg: String, viewModel: AppDetailViewModel = hiltViewModel()) 
         title = editingTitle,
         initialValue = editingValue,
         onConfirm = { value ->
-            editingSpec?.let { viewModel.emitIntentOnIO(AppDetailIntent.UpdateField(it.key, value)) }
+            editingSpec?.let { viewModel.dispatch(AppDetailIntent.UpdateField(it.key, value)) }
             editingSpec = null
         },
         onDismiss = { editingSpec = null }
@@ -342,8 +305,8 @@ private fun InjectModeCard(
 ) {
     Surface(
         modifier = modifier,
-        shape = animatedGroupedShape(AppPosition.Single, false, Dimens.ListCorner),
-        color = MaterialTheme.colorScheme.surfaceBright,
+        shape = MaterialTheme.shapes.large,
+        color = ConfundoSurfaces.row,
     ) {
         Column(modifier = Modifier.padding(Spacing.lg)) {
             Text(

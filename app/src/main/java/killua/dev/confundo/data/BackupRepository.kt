@@ -3,6 +3,7 @@ package killua.dev.confundo.data
 import android.content.Context
 import android.net.Uri
 import dagger.hilt.android.qualifiers.ApplicationContext
+import killua.dev.arsenal.data.settings.SettingsStore
 import killua.dev.confundo.ui.pages.home.FieldKeys
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -12,19 +13,11 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * 负责整个 App 的备份与恢复：
- * - 每个目标 App 的 hook 参数、是否开启、是否自动重置
- * - 全部模版
- * - 应用级设置（外观、时间字段、定时重置等）
- *
- * 备份文件为 JSON，恢复时对已卸载的应用会自动跳过，并对损坏/不兼容的文件给出明确错误。
- */
 @Singleton
 class BackupRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val configRepository: ConfigRepository,
-    private val settingsRepository: SettingsRepository,
+    private val settingsStore: SettingsStore,
 ) {
 
     companion object {
@@ -84,14 +77,13 @@ class BackupRepository @Inject constructor(
         root.put(KEY_APP_ID, context.packageName)
 
         // 应用级设置
-        val s = settingsRepository.current()
         val settingsObj = JSONObject().apply {
-            put(KEY_AUTO_REFRESH, s.autoRefreshEnabled)
-            put(KEY_INTERVAL_DAYS, s.intervalDays)
-            put(KEY_DARK_MODE, s.darkMode)
-            put(KEY_DYNAMIC_COLOR, s.dynamicColor)
-            put(KEY_RANDOMIZE_ACTIVATION, s.randomizeActivationTime)
-            put(KEY_RANDOMIZE_BOOT, s.randomizeBootTime)
+            put(KEY_AUTO_REFRESH, settingsStore.get(ConfundoSettings.autoRefreshEnabled))
+            put(KEY_INTERVAL_DAYS, settingsStore.get(ConfundoSettings.refreshIntervalDays))
+            put(KEY_DARK_MODE, settingsStore.get(ConfundoSettings.darkMode).toBackupInt())
+            put(KEY_DYNAMIC_COLOR, settingsStore.get(ConfundoSettings.dynamicColor))
+            put(KEY_RANDOMIZE_ACTIVATION, settingsStore.get(ConfundoSettings.randomizeActivationTime))
+            put(KEY_RANDOMIZE_BOOT, settingsStore.get(ConfundoSettings.randomizeBootTime))
         }
         root.put(KEY_SETTINGS, settingsObj)
 
@@ -160,15 +152,16 @@ class BackupRepository @Inject constructor(
         // 恢复应用级设置
         var settingsRestored = false
         root.optJSONObject(KEY_SETTINGS)?.let { obj ->
-            val restored = AppSettings(
-                autoRefreshEnabled = obj.optBoolean(KEY_AUTO_REFRESH, false),
-                intervalDays = obj.optInt(KEY_INTERVAL_DAYS, AppSettings.DEFAULT_INTERVAL_DAYS),
-                darkMode = obj.optInt(KEY_DARK_MODE, AppSettings.DARK_MODE_SYSTEM),
-                dynamicColor = obj.optBoolean(KEY_DYNAMIC_COLOR, true),
-                randomizeActivationTime = obj.optBoolean(KEY_RANDOMIZE_ACTIVATION, false),
-                randomizeBootTime = obj.optBoolean(KEY_RANDOMIZE_BOOT, false),
+            settingsStore.set(ConfundoSettings.autoRefreshEnabled, obj.optBoolean(KEY_AUTO_REFRESH, false))
+            settingsStore.set(
+                ConfundoSettings.refreshIntervalDays,
+                obj.optInt(KEY_INTERVAL_DAYS, ConfundoSettings.DEFAULT_INTERVAL_DAYS)
+                    .coerceIn(ConfundoSettings.MIN_INTERVAL_DAYS, ConfundoSettings.MAX_INTERVAL_DAYS),
             )
-            settingsRepository.importSettings(restored)
+            settingsStore.set(ConfundoSettings.darkMode, DarkMode.fromBackupInt(obj.optInt(KEY_DARK_MODE, 0)))
+            settingsStore.set(ConfundoSettings.dynamicColor, obj.optBoolean(KEY_DYNAMIC_COLOR, true))
+            settingsStore.set(ConfundoSettings.randomizeActivationTime, obj.optBoolean(KEY_RANDOMIZE_ACTIVATION, false))
+            settingsStore.set(ConfundoSettings.randomizeBootTime, obj.optBoolean(KEY_RANDOMIZE_BOOT, false))
             settingsRestored = true
         }
 

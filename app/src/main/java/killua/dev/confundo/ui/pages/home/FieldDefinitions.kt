@@ -9,10 +9,6 @@ object FieldKeys {
 
     const val NATIVE_HOOK_ENABLED = "_native_hook_enabled"
 
-    /**
-     * 注入模式。取值见 [killua.dev.confundo.data.InjectMode.storage]；
-     * 缺省为空，等价于历史的进程内注入模式。
-     */
     const val INJECT_MODE = "_inject_mode"
 
     const val DEVICE_ID = "device_id"

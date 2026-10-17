@@ -2,7 +2,6 @@ package killua.dev.confundo.ui.theme
 
 import androidx.compose.ui.unit.dp
 
-// 统一的间距 / 尺寸 token，替代散落的魔法 dp。
 object Spacing {
     val none = 0.dp
     val xxs = 2.dp
@@ -16,7 +15,6 @@ object Spacing {
     val xxxl = 32.dp
 }
 
-/** Material Expressive shape scale. */
 object ShapeRadius {
     val None = 0.dp
     val ExtraSmall = 4.dp

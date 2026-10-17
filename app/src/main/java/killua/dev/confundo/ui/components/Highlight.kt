@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Warning
@@ -25,7 +26,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.foundation.shape.RoundedCornerShape
+import killua.dev.confundo.data.DarkMode
 import killua.dev.confundo.ui.theme.ConfundoTheme
 import killua.dev.confundo.ui.theme.ShapeRadius
 import killua.dev.confundo.ui.theme.Spacing
@@ -104,7 +105,7 @@ fun Highlight(
 @Preview(showBackground = true, name = "Light Mode")
 @Composable
 fun HighlightPreview() {
-    ConfundoTheme(dynamicColor = false) {
+    ConfundoTheme(themeMode = DarkMode.System, dynamicColor = false) {
         Column(
             modifier = Modifier.padding(Spacing.lg),
             verticalArrangement = Arrangement.spacedBy(Spacing.lg)
