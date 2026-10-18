@@ -24,12 +24,10 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Deselect
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CheckBox
+import androidx.compose.material.icons.rounded.CheckBoxOutlineBlank
 import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
@@ -56,10 +54,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import killua.dev.arsenal.core.overlay.SimpleMenuItem
+import killua.dev.arsenal.core.overlay.SimpleMenuMode
 import killua.dev.arsenal.material.Spacing
 import killua.dev.arsenal.material.components.ComponentContent
 import killua.dev.arsenal.material.components.application.AppFilterChip
@@ -69,6 +71,7 @@ import killua.dev.arsenal.material.components.application.ArsenalSearchBar
 import killua.dev.arsenal.material.components.application.SearchExpansionMode
 import killua.dev.arsenal.material.components.application.appListItems
 import killua.dev.arsenal.material.components.fabmenu.ArsenalFabMenu
+import killua.dev.arsenal.material.components.menu.rememberSimpleMenuLauncher
 import killua.dev.arsenal.material.components.fabmenu.FabMenuItemSpec
 import killua.dev.arsenal.material.components.fabmenu.FabMenuSpec
 import killua.dev.arsenal.material.overlay.LocalOverlayController
@@ -314,37 +317,56 @@ private fun statusChips(filter: AppStatusFilter, onSelect: (AppStatusFilter) -> 
     ),
 )
 
+private const val FILTER_SYSTEM_APPS_ID = "show_system_apps"
+
 @Composable
 private fun FilterMenu(state: HomeUiState, onIntent: (HomeIntent) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { expanded = true }) {
-            Icon(Icons.Rounded.FilterList, contentDescription = stringResource(R.string.cd_more_options))
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.menu_show_system_apps)) },
-                trailingIcon = { Checkbox(checked = state.showSystemApps, onCheckedChange = null) },
-                onClick = {
-                    expanded = false
-                    onIntent(HomeIntent.ToggleSystemApps)
-                },
-            )
-            AppSortOrder.entries.forEach { order ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(sortLabelRes(order))) },
-                    trailingIcon = if (order == state.sortOrder) {
-                        { Icon(Icons.Rounded.Check, contentDescription = null) }
-                    } else {
-                        null
+    val launcher = rememberSimpleMenuLauncher()
+    var anchor by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val systemAppsLabel = stringResource(R.string.menu_show_system_apps)
+    val sortLabels = AppSortOrder.entries.map { stringResource(sortLabelRes(it)) }
+    IconButton(
+        onClick = {
+            anchor?.let { coordinates ->
+                launcher.show(
+                    items = buildList {
+                        add(
+                            SimpleMenuItem(
+                                id = FILTER_SYSTEM_APPS_ID,
+                                label = systemAppsLabel,
+                                trailingIcon = if (state.showSystemApps) {
+                                    Icons.Rounded.CheckBox
+                                } else {
+                                    Icons.Rounded.CheckBoxOutlineBlank
+                                },
+                            ),
+                        )
+                        AppSortOrder.entries.forEachIndexed { index, order ->
+                            add(
+                                SimpleMenuItem(
+                                    id = order.name,
+                                    label = sortLabels[index],
+                                    selected = order == state.sortOrder,
+                                ),
+                            )
+                        }
                     },
-                    onClick = {
-                        expanded = false
-                        onIntent(HomeIntent.SetSortOrder(order))
+                    anchor = coordinates,
+                    mode = SimpleMenuMode.Navigation,
+                    onItemClick = { id ->
+                        if (id == FILTER_SYSTEM_APPS_ID) {
+                            onIntent(HomeIntent.ToggleSystemApps)
+                        } else {
+                            AppSortOrder.entries.firstOrNull { it.name == id }
+                                ?.let { onIntent(HomeIntent.SetSortOrder(it)) }
+                        }
                     },
                 )
             }
-        }
+        },
+        modifier = Modifier.onGloballyPositioned { anchor = it },
+    ) {
+        Icon(Icons.Rounded.FilterList, contentDescription = stringResource(R.string.cd_more_options))
     }
 }
 
