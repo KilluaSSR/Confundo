@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import killua.dev.arsenal.material.components.loadingindicator.ArsenalContainedLoadingIndicator
-import killua.dev.confundo.ui.theme.Spacing
+import killua.dev.arsenal.material.ArsenalTokens
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -19,7 +19,7 @@ fun ExpressiveRefreshIndicator(
 ) {
     ArsenalContainedLoadingIndicator(
         modifier = modifier
-            .padding(top = Spacing.sm)
+            .padding(top = ArsenalTokens.spacing.sm)
             .graphicsLayer {
                 val progress =
                     if (isRefreshing) 1f else state.distanceFraction.coerceIn(0f, 1f)

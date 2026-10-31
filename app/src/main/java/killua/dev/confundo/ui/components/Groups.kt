@@ -8,7 +8,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import killua.dev.arsenal.material.Spacing
+import killua.dev.arsenal.material.ArsenalTokens
 import killua.dev.arsenal.material.templates.settings.SettingsGroup
 import killua.dev.arsenal.material.templates.settings.groupedItemShape
 import killua.dev.arsenal.material.templates.settings.itemPosition
@@ -30,7 +30,7 @@ fun RowGroup(
     if (rows.isEmpty()) return
     val color = ConfundoSurfaces.row
     SettingsGroup(title = title, modifier = modifier) {
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.xs)) {
             rows.forEachIndexed { index, row ->
                 row(RowSlot(groupedItemShape(itemPosition(index, rows.size)), color))
             }

@@ -65,7 +65,7 @@ import killua.dev.arsenal.material.components.Highlight
 import killua.dev.arsenal.material.components.HighlightTone
 import killua.dev.confundo.ui.components.RowGroup
 import killua.dev.confundo.ui.theme.Dimens
-import killua.dev.confundo.ui.theme.Spacing
+import killua.dev.arsenal.material.ArsenalTokens
 
 // 高风险应用：为其伪装指纹可能导致账号异常/封禁（见 README 特别提醒）。
 private val HighRiskPackages = setOf(
@@ -146,7 +146,7 @@ fun AppDetailPage(backStackEntry: NavBackStackEntry) {
                             .windowInsetsPadding(
                                 WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
                             )
-                            .padding(horizontal = Spacing.lg)
+                            .padding(horizontal = ArsenalTokens.spacing.lg)
                             .align(Alignment.TopCenter)
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -308,12 +308,12 @@ private fun InjectModeCard(
         shape = MaterialTheme.shapes.large,
         color = ConfundoSurfaces.row,
     ) {
-        Column(modifier = Modifier.padding(Spacing.lg)) {
+        Column(modifier = Modifier.padding(ArsenalTokens.spacing.lg)) {
             Text(
                 text = stringResource(R.string.inject_mode_title),
                 style = MaterialTheme.typography.titleMedium,
             )
-            Spacer(Modifier.height(Spacing.sm))
+            Spacer(Modifier.height(ArsenalTokens.spacing.sm))
             val modes = InjectMode.entries
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 modes.forEachIndexed { index, option ->
@@ -327,7 +327,7 @@ private fun InjectModeCard(
                     }
                 }
             }
-            Spacer(Modifier.height(Spacing.sm))
+            Spacer(Modifier.height(ArsenalTokens.spacing.sm))
             AnimatedContent(targetState = mode, label = "inject-mode-summary") { current ->
                 Text(
                     text = stringResource(current.summaryRes),

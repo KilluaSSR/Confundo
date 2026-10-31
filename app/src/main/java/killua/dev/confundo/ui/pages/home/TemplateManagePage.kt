@@ -46,7 +46,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import killua.dev.arsenal.material.Spacing
+import killua.dev.arsenal.material.ArsenalTokens
 import killua.dev.arsenal.material.overlay.LocalOverlayController
 import killua.dev.arsenal.material.templates.basics.EmptyView
 import killua.dev.arsenal.material.templates.basics.LoadingView
@@ -111,9 +111,9 @@ fun TemplateManagePage() {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
-                                start = Spacing.md,
-                                end = Spacing.md,
-                                top = Spacing.sm,
+                                start = ArsenalTokens.spacing.md,
+                                end = ArsenalTokens.spacing.md,
+                                top = ArsenalTokens.spacing.sm,
                                 bottom = 96.dp,
                             ),
                             verticalArrangement = Arrangement.spacedBy(2.dp),

@@ -17,7 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
-import killua.dev.arsenal.material.Spacing
+import killua.dev.arsenal.material.ArsenalTokens
 import killua.dev.arsenal.material.components.application.ArsenalSearchBar
 import killua.dev.arsenal.material.components.application.SearchExpansionMode
 import killua.dev.arsenal.material.components.application.appListItems
@@ -66,10 +66,10 @@ fun CopySourcePage(backStackEntry: NavBackStackEntry) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
-                                start = Spacing.md,
-                                end = Spacing.md,
-                                top = Spacing.sm,
-                                bottom = Spacing.lg,
+                                start = ArsenalTokens.spacing.md,
+                                end = ArsenalTokens.spacing.md,
+                                top = ArsenalTokens.spacing.sm,
+                                bottom = ArsenalTokens.spacing.lg,
                             ),
                         ) {
                             appListItems(

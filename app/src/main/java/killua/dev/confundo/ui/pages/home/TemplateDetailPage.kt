@@ -54,7 +54,7 @@ import killua.dev.confundo.ui.components.RowGroup
 import killua.dev.confundo.ui.components.TextInputDialog
 import killua.dev.confundo.ui.theme.Dimens
 import killua.dev.confundo.ui.theme.ShapeRadius
-import killua.dev.confundo.ui.theme.Spacing
+import killua.dev.arsenal.material.ArsenalTokens
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @NavDestination(route = "template_detail/{templateId}")
@@ -105,7 +105,7 @@ fun TemplateDetailPage(backStackEntry: NavBackStackEntry) {
                             .windowInsetsPadding(
                                 WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
                             )
-                            .padding(horizontal = Spacing.lg)
+                            .padding(horizontal = ArsenalTokens.spacing.lg)
                             .align(Alignment.TopCenter)
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))

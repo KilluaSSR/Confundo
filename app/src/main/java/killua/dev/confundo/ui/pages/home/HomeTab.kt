@@ -62,7 +62,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import killua.dev.arsenal.core.overlay.SimpleMenuItem
 import killua.dev.arsenal.core.overlay.SimpleMenuMode
-import killua.dev.arsenal.material.Spacing
+import killua.dev.arsenal.material.ArsenalTokens
 import killua.dev.arsenal.material.components.ComponentContent
 import killua.dev.arsenal.material.components.application.AppFilterChip
 import killua.dev.arsenal.material.components.application.AppFilterChipsRow
@@ -191,8 +191,8 @@ fun HomeTab() {
                         ) {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(start = Spacing.md, end = Spacing.md, bottom = 96.dp),
-                                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                                contentPadding = PaddingValues(start = ArsenalTokens.spacing.md, end = ArsenalTokens.spacing.md, bottom = 96.dp),
+                                verticalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.xs),
                             ) {
                                 if (state.visibleApps.isEmpty()) {
                                     stateItem { fill ->

@@ -44,7 +44,7 @@ import killua.dev.arsenal.automation.TaskScheduler
 import killua.dev.arsenal.data.settings.SettingsStore
 import killua.dev.arsenal.data.settings.asGate
 import killua.dev.arsenal.data.settings.di.SettingsEntryPoint
-import killua.dev.arsenal.material.Spacing
+import killua.dev.arsenal.material.ArsenalTokens
 import killua.dev.arsenal.material.components.loadingindicator.ArsenalLoadingIndicator
 import killua.dev.arsenal.material.overlay.LocalOverlayController
 import killua.dev.arsenal.material.templates.scaffolds.plus
@@ -92,9 +92,9 @@ fun SettingsTab() {
             screen = SETTINGS_SCREEN,
             store = store,
             contentPadding = padding + PaddingValues(
-                start = Spacing.md,
-                end = Spacing.md,
-                bottom = Spacing.lg,
+                start = ArsenalTokens.spacing.md,
+                end = ArsenalTokens.spacing.md,
+                bottom = ArsenalTokens.spacing.lg,
             ),
             itemContainerColor = ConfundoSurfaces.row,
         )
@@ -290,8 +290,8 @@ class ConfundoSettingsRenderer @Inject constructor(
         val locale = LocalLocale.current.platformLocale
 
         Column(
-            modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.md),
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            modifier = Modifier.padding(horizontal = ArsenalTokens.spacing.lg, vertical = ArsenalTokens.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.sm),
         ) {
             Text(
                 text = if (lastRunMillis > 0L) {
@@ -341,8 +341,8 @@ class ConfundoSettingsRenderer @Inject constructor(
         }
 
         Column(
-            modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.md),
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            modifier = Modifier.padding(horizontal = ArsenalTokens.spacing.lg, vertical = ArsenalTokens.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.sm),
         ) {
             OutlinedButton(
                 modifier = Modifier.fillMaxWidth(),
@@ -442,8 +442,8 @@ class ConfundoSettingsRenderer @Inject constructor(
         }
 
         Column(
-            modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.md),
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            modifier = Modifier.padding(horizontal = ArsenalTokens.spacing.lg, vertical = ArsenalTokens.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.sm),
         ) {
             FilledTonalButton(
                 modifier = Modifier.fillMaxWidth(),
@@ -456,11 +456,11 @@ class ConfundoSettingsRenderer @Inject constructor(
                 },
             ) {
                 if (busy) {
-                    ArsenalLoadingIndicator(modifier = Modifier.size(Spacing.xl))
+                    ArsenalLoadingIndicator(modifier = Modifier.size(ArsenalTokens.spacing.xl))
                 } else {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                        horizontalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.sm),
                     ) {
                         Icon(Icons.Rounded.Backup, contentDescription = null)
                         Text(stringResource(R.string.settings_backup_export))
@@ -475,7 +475,7 @@ class ConfundoSettingsRenderer @Inject constructor(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.sm),
                 ) {
                     Icon(Icons.Rounded.Restore, contentDescription = null)
                     Text(stringResource(R.string.settings_backup_import))
