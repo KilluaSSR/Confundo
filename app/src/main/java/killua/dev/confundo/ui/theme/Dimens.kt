@@ -2,19 +2,6 @@ package killua.dev.confundo.ui.theme
 
 import androidx.compose.ui.unit.dp
 
-object Spacing {
-    val none = 0.dp
-    val xxs = 2.dp
-    val xs = 4.dp
-    val sm = 8.dp
-    val md = 12.dp
-    val lg = 16.dp
-    val lgIncreased = 20.dp
-    val xl = 24.dp
-    val xxl = 28.dp
-    val xxxl = 32.dp
-}
-
 object ShapeRadius {
     val None = 0.dp
     val ExtraSmall = 4.dp

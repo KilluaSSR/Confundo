@@ -15,12 +15,11 @@ import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import killua.dev.arsenal.material.Spacing
+import killua.dev.arsenal.material.ArsenalTokens
 import killua.dev.arsenal.material.templates.settings.SettingsItem
 import killua.dev.arsenal.material.templates.settings.groupedItemShape
 import killua.dev.arsenal.material.templates.settings.itemPosition
 import killua.dev.confundo.R
-import killua.dev.confundo.ui.components.ConfundoSurfaces
 
 @Composable
 internal fun BatchActionsSheet(
@@ -36,11 +35,11 @@ internal fun BatchActionsSheet(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Spacing.lg)
-            .padding(bottom = Spacing.sm),
-        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+            .padding(horizontal = ArsenalTokens.spacing.lg)
+            .padding(bottom = ArsenalTokens.spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.md),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.xs)) {
             Text(
                 text = stringResource(R.string.batch_sheet_title),
                 style = MaterialTheme.typography.titleLarge,
@@ -71,7 +70,7 @@ internal fun BatchActionsSheet(
             onOff = onResetOff,
         )
 
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Column(verticalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.xs)) {
             Text(
                 text = stringResource(R.string.batch_group_template),
                 style = MaterialTheme.typography.titleSmall,
@@ -100,7 +99,7 @@ private fun BatchToggleRow(
     onOn: () -> Unit,
     onOff: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.xs)) {
         Text(text = label, style = MaterialTheme.typography.titleSmall)
         if (hint != null) {
             Text(
@@ -109,7 +108,7 @@ private fun BatchToggleRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.sm)) {
             FilledTonalButton(
                 onClick = onOn,
                 shapes = ButtonDefaults.shapes(),
@@ -142,23 +141,23 @@ internal fun TemplatePickerSheet(
     onPick: (String) -> Unit,
 ) {
     Column(
-        modifier = Modifier.padding(bottom = Spacing.sm),
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+        modifier = Modifier.padding(bottom = ArsenalTokens.spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.xs),
     ) {
         Text(
             text = stringResource(R.string.template_apply_dialog_title),
             style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+            modifier = Modifier.padding(horizontal = ArsenalTokens.spacing.lg, vertical = ArsenalTokens.spacing.sm),
         )
         Column(
-            modifier = Modifier.padding(horizontal = Spacing.md),
-            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+            modifier = Modifier.padding(horizontal = ArsenalTokens.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.xs),
         ) {
             templates.forEachIndexed { index, template ->
                 SettingsItem(
                     title = template.name,
                     shape = groupedItemShape(itemPosition(index, templates.size)),
-                    containerColor = ConfundoSurfaces.row,
+                    containerColor = ArsenalTokens.colors.surfaceBright,
                     onClick = { onPick(template.id) },
                 )
             }

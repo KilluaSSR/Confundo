@@ -42,19 +42,19 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
+import killua.dev.arsenal.material.ArsenalTokens
+import killua.dev.arsenal.material.templates.basics.ArsenalRowGroup
 import killua.dev.arsenal.material.templates.basics.LoadingView
+import killua.dev.arsenal.material.templates.scaffolds.ArsenalDetailScaffold
 import killua.dev.arsenal.material.templates.settings.SettingsItem
 import killua.dev.arsenal.navigation.annotation.NavDestination
 import killua.dev.confundo.R
 import killua.dev.confundo.data.FieldCatalog
 import killua.dev.confundo.data.FieldSpec
-import killua.dev.confundo.ui.components.DetailScaffold
 import killua.dev.confundo.ui.components.FieldInputDialog
-import killua.dev.confundo.ui.components.RowGroup
 import killua.dev.confundo.ui.components.TextInputDialog
 import killua.dev.confundo.ui.theme.Dimens
 import killua.dev.confundo.ui.theme.ShapeRadius
-import killua.dev.confundo.ui.theme.Spacing
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @NavDestination(route = "template_detail/{templateId}")
@@ -72,7 +72,7 @@ fun TemplateDetailPage(backStackEntry: NavBackStackEntry) {
     var editingValue by remember { mutableStateOf("") }
     var editingName by remember { mutableStateOf(false) }
 
-    DetailScaffold(
+    ArsenalDetailScaffold(backContentDescription = stringResource(R.string.cd_back), 
         title = state.name.ifEmpty {
             if (state.isNew) stringResource(R.string.template_new) else ""
         },
@@ -105,7 +105,7 @@ fun TemplateDetailPage(backStackEntry: NavBackStackEntry) {
                             .windowInsetsPadding(
                                 WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
                             )
-                            .padding(horizontal = Spacing.lg)
+                            .padding(horizontal = ArsenalTokens.spacing.lg)
                             .align(Alignment.TopCenter)
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -143,7 +143,7 @@ fun TemplateDetailPage(backStackEntry: NavBackStackEntry) {
 
                         Spacer(modifier = Modifier.height(8.dp))
                         FieldCatalog.grouped.forEach { (category, specs) ->
-                            RowGroup(
+                            ArsenalRowGroup(
                                 title = stringResource(category.titleRes),
                                 rows = specs.map { spec ->
                                     { slot ->

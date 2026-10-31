@@ -17,15 +17,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
-import killua.dev.arsenal.material.Spacing
+import killua.dev.arsenal.material.ArsenalTokens
 import killua.dev.arsenal.material.components.application.ArsenalSearchBar
 import killua.dev.arsenal.material.components.application.SearchExpansionMode
 import killua.dev.arsenal.material.components.application.appListItems
 import killua.dev.arsenal.material.templates.basics.EmptyView
 import killua.dev.arsenal.material.templates.basics.LoadingView
+import killua.dev.arsenal.material.templates.scaffolds.ArsenalDetailScaffold
 import killua.dev.arsenal.navigation.annotation.NavDestination
 import killua.dev.confundo.R
-import killua.dev.confundo.ui.components.DetailScaffold
 
 @OptIn(ExperimentalMaterial3Api::class)
 @NavDestination(route = "copy_source/{pkg}")
@@ -37,7 +37,7 @@ fun CopySourcePage(backStackEntry: NavBackStackEntry) {
 
     LaunchedEffect(targetPkg) { viewModel.dispatch(CopySourceIntent.Load(targetPkg)) }
 
-    DetailScaffold(
+    ArsenalDetailScaffold(backContentDescription = stringResource(R.string.cd_back), 
         title = stringResource(R.string.template_pick_title),
         onBack = { viewModel.dispatch(CopySourceIntent.Back) },
     ) { padding ->
@@ -66,10 +66,10 @@ fun CopySourcePage(backStackEntry: NavBackStackEntry) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
-                                start = Spacing.md,
-                                end = Spacing.md,
-                                top = Spacing.sm,
-                                bottom = Spacing.lg,
+                                start = ArsenalTokens.spacing.md,
+                                end = ArsenalTokens.spacing.md,
+                                top = ArsenalTokens.spacing.sm,
+                                bottom = ArsenalTokens.spacing.lg,
                             ),
                         ) {
                             appListItems(

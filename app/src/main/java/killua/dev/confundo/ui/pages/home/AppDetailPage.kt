@@ -49,7 +49,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
+import killua.dev.arsenal.material.ArsenalTokens
+import killua.dev.arsenal.material.components.Highlight
+import killua.dev.arsenal.material.components.HighlightTone
+import killua.dev.arsenal.material.templates.basics.ArsenalRowGroup
 import killua.dev.arsenal.material.templates.basics.LoadingView
+import killua.dev.arsenal.material.templates.scaffolds.ArsenalDetailScaffold
 import killua.dev.arsenal.material.templates.settings.SettingsItem
 import killua.dev.arsenal.material.templates.settings.SettingsSwitch
 import killua.dev.arsenal.navigation.annotation.NavDestination
@@ -58,14 +63,8 @@ import killua.dev.confundo.data.FieldCatalog
 import killua.dev.confundo.data.FieldSpec
 import killua.dev.confundo.data.InjectMode
 import killua.dev.confundo.data.SystemServerFields
-import killua.dev.confundo.ui.components.ConfundoSurfaces
-import killua.dev.confundo.ui.components.DetailScaffold
 import killua.dev.confundo.ui.components.FieldInputDialog
-import killua.dev.arsenal.material.components.Highlight
-import killua.dev.arsenal.material.components.HighlightTone
-import killua.dev.confundo.ui.components.RowGroup
 import killua.dev.confundo.ui.theme.Dimens
-import killua.dev.confundo.ui.theme.Spacing
 
 // 高风险应用：为其伪装指纹可能导致账号异常/封禁（见 README 特别提醒）。
 private val HighRiskPackages = setOf(
@@ -106,7 +105,7 @@ fun AppDetailPage(backStackEntry: NavBackStackEntry) {
     var editingTitle by remember { mutableStateOf("") }
     var editingValue by remember { mutableStateOf("") }
 
-    DetailScaffold(
+    ArsenalDetailScaffold(backContentDescription = stringResource(R.string.cd_back), 
         title = state.appName.ifEmpty { pkg },
         onBack = { viewModel.dispatch(AppDetailIntent.Back) },
         actions = {
@@ -146,7 +145,7 @@ fun AppDetailPage(backStackEntry: NavBackStackEntry) {
                             .windowInsetsPadding(
                                 WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
                             )
-                            .padding(horizontal = Spacing.lg)
+                            .padding(horizontal = ArsenalTokens.spacing.lg)
                             .align(Alignment.TopCenter)
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -162,7 +161,7 @@ fun AppDetailPage(backStackEntry: NavBackStackEntry) {
                             Spacer(modifier = Modifier.height(8.dp))
                         }
 
-                        RowGroup(
+                        ArsenalRowGroup(
                             rows = listOf(
                                 { slot ->
                                     SettingsSwitch(
@@ -219,7 +218,7 @@ fun AppDetailPage(backStackEntry: NavBackStackEntry) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
 
-                                RowGroup(
+                                ArsenalRowGroup(
                                     rows = listOf(
                                         { slot ->
                                             SettingsSwitch(
@@ -253,7 +252,7 @@ fun AppDetailPage(backStackEntry: NavBackStackEntry) {
                                     }
                                     if (specs.isEmpty()) return@forEach
 
-                                    RowGroup(
+                                    ArsenalRowGroup(
                                         title = stringResource(category.titleRes),
                                         rows = specs.map { spec ->
                                             { slot ->
@@ -306,14 +305,14 @@ private fun InjectModeCard(
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
-        color = ConfundoSurfaces.row,
+        color = ArsenalTokens.colors.surfaceBright,
     ) {
-        Column(modifier = Modifier.padding(Spacing.lg)) {
+        Column(modifier = Modifier.padding(ArsenalTokens.spacing.lg)) {
             Text(
                 text = stringResource(R.string.inject_mode_title),
                 style = MaterialTheme.typography.titleMedium,
             )
-            Spacer(Modifier.height(Spacing.sm))
+            Spacer(Modifier.height(ArsenalTokens.spacing.sm))
             val modes = InjectMode.entries
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 modes.forEachIndexed { index, option ->
@@ -327,7 +326,7 @@ private fun InjectModeCard(
                     }
                 }
             }
-            Spacer(Modifier.height(Spacing.sm))
+            Spacer(Modifier.height(ArsenalTokens.spacing.sm))
             AnimatedContent(targetState = mode, label = "inject-mode-summary") { current ->
                 Text(
                     text = stringResource(current.summaryRes),

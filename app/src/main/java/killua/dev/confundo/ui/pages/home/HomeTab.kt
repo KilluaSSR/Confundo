@@ -62,7 +62,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import killua.dev.arsenal.core.overlay.SimpleMenuItem
 import killua.dev.arsenal.core.overlay.SimpleMenuMode
-import killua.dev.arsenal.material.Spacing
+import killua.dev.arsenal.material.ArsenalTokens
 import killua.dev.arsenal.material.components.ComponentContent
 import killua.dev.arsenal.material.components.application.AppFilterChip
 import killua.dev.arsenal.material.components.application.AppFilterChipsRow
@@ -71,16 +71,16 @@ import killua.dev.arsenal.material.components.application.ArsenalSearchBar
 import killua.dev.arsenal.material.components.application.SearchExpansionMode
 import killua.dev.arsenal.material.components.application.appListItems
 import killua.dev.arsenal.material.components.fabmenu.ArsenalFabMenu
-import killua.dev.arsenal.material.components.menu.rememberSimpleMenuLauncher
 import killua.dev.arsenal.material.components.fabmenu.FabMenuItemSpec
 import killua.dev.arsenal.material.components.fabmenu.FabMenuSpec
+import killua.dev.arsenal.material.components.loadingindicator.ArsenalExpressiveRefreshIndicator
+import killua.dev.arsenal.material.components.menu.rememberSimpleMenuLauncher
 import killua.dev.arsenal.material.overlay.LocalOverlayController
 import killua.dev.arsenal.material.templates.basics.EmptyView
 import killua.dev.arsenal.material.templates.basics.LoadingView
 import killua.dev.arsenal.material.templates.basics.stateItem
+import killua.dev.arsenal.material.templates.scaffolds.ArsenalTabScaffold
 import killua.dev.confundo.R
-import killua.dev.confundo.ui.components.ExpressiveRefreshIndicator
-import killua.dev.confundo.ui.components.TabScaffold
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -103,7 +103,7 @@ fun HomeTab() {
     val confirmLabel = stringResource(R.string.dialog_confirm)
     val cancelLabel = stringResource(R.string.dialog_cancel)
 
-    TabScaffold(
+    ArsenalTabScaffold(
         title = stringResource(R.string.app_name),
         actions = { FilterMenu(state, viewModel::dispatch) },
         floatingActionButton = {
@@ -182,7 +182,7 @@ fun HomeTab() {
                             state = pullState,
                             modifier = Modifier.fillMaxSize(),
                             indicator = {
-                                ExpressiveRefreshIndicator(
+                                ArsenalExpressiveRefreshIndicator(
                                     isRefreshing = state.isRefreshing,
                                     state = pullState,
                                     modifier = Modifier.align(Alignment.TopCenter),
@@ -191,8 +191,8 @@ fun HomeTab() {
                         ) {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(start = Spacing.md, end = Spacing.md, bottom = 96.dp),
-                                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                                contentPadding = PaddingValues(start = ArsenalTokens.spacing.md, end = ArsenalTokens.spacing.md, bottom = 96.dp),
+                                verticalArrangement = Arrangement.spacedBy(ArsenalTokens.spacing.xs),
                             ) {
                                 if (state.visibleApps.isEmpty()) {
                                     stateItem { fill ->

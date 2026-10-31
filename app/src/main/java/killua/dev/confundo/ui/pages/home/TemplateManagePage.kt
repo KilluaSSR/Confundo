@@ -46,17 +46,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import killua.dev.arsenal.material.Spacing
+import killua.dev.arsenal.material.ArsenalTokens
 import killua.dev.arsenal.material.overlay.LocalOverlayController
 import killua.dev.arsenal.material.templates.basics.EmptyView
 import killua.dev.arsenal.material.templates.basics.LoadingView
+import killua.dev.arsenal.material.templates.scaffolds.ArsenalDetailScaffold
 import killua.dev.arsenal.material.templates.settings.SettingsItem
 import killua.dev.arsenal.material.templates.settings.groupedItemShape
 import killua.dev.arsenal.material.templates.settings.itemPosition
 import killua.dev.arsenal.navigation.annotation.NavDestination
 import killua.dev.confundo.R
-import killua.dev.confundo.ui.components.ConfundoSurfaces
-import killua.dev.confundo.ui.components.DetailScaffold
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @NavDestination(route = "template_manage")
@@ -78,7 +77,7 @@ fun TemplateManagePage() {
     val deleteLabel = stringResource(R.string.dialog_delete)
     val cancelLabel = stringResource(R.string.dialog_cancel)
 
-    DetailScaffold(
+    ArsenalDetailScaffold(backContentDescription = stringResource(R.string.cd_back), 
         title = stringResource(R.string.template_manage),
         onBack = { viewModel.dispatch(TemplateManageIntent.Back) },
         floatingActionButton = {
@@ -111,9 +110,9 @@ fun TemplateManagePage() {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(
-                                start = Spacing.md,
-                                end = Spacing.md,
-                                top = Spacing.sm,
+                                start = ArsenalTokens.spacing.md,
+                                end = ArsenalTokens.spacing.md,
+                                top = ArsenalTokens.spacing.sm,
                                 bottom = 96.dp,
                             ),
                             verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -143,7 +142,7 @@ fun TemplateManagePage() {
                                     containerColor = if (selected) {
                                         MaterialTheme.colorScheme.primaryContainer
                                     } else {
-                                        ConfundoSurfaces.row
+                                        ArsenalTokens.colors.surfaceBright
                                     },
                                     modifier = Modifier.animateItem(),
                                 )
