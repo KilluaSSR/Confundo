@@ -20,6 +20,7 @@ import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Wallpaper
+import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -51,6 +52,8 @@ import killua.dev.arsenal.material.ArsenalTokens
 import killua.dev.arsenal.material.components.loadingindicator.ArsenalLoadingIndicator
 import killua.dev.arsenal.material.overlay.LocalOverlayController
 import killua.dev.arsenal.material.templates.scaffolds.ArsenalTabScaffold
+import killua.dev.arsenal.navigation.Navigator
+import killua.dev.arsenal.navigation.generated.GeneratedRoutes
 import killua.dev.arsenal.material.templates.scaffolds.plus
 import killua.dev.arsenal.material.templates.settings.ArsenalSettingsScreen
 import killua.dev.arsenal.material.templates.settings.ItemPosition
@@ -482,4 +485,21 @@ class ConfundoSettingsRenderer @Inject constructor(
             }
         }
     }
+}
+
+@SpiImpl
+class LogsSettingEntry @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val navigator: Navigator,
+) : SettingsEntry {
+    override val screen = SETTINGS_SCREEN
+    override val group: String = context.getString(R.string.settings_group_debug)
+    override val order = 100
+    override fun model() = SettingsItemModel.Navigation(
+        title = context.getString(R.string.settings_logs_title),
+        description = context.getString(R.string.settings_logs_description),
+        icon = Icons.Rounded.Terminal,
+        accent = SettingsAccent.Neutral,
+        onClick = { navigator.navigate(GeneratedRoutes.LOGS_SCREEN) },
+    )
 }
